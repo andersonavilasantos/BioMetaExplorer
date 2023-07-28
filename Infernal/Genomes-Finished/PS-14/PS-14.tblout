@@ -1,0 +1,23 @@
+#target name                                                            accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
+#---------------------------------------------------------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119    14692    14807      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119    35237    35352      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119    36395    36510      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119    96395    96510      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   102251   102366      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   166752   166867      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   172361   172476      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   177363   177478      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   620790   620905      +    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119  3195583  3195468      -    no    1 0.59   0.0   88.7   5.8e-19 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5S_rRNA              RF00001    cm        1      119   932106   932221      +    no    1 0.59   0.0   84.3   8.1e-18 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154    11721    11875      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154    32189    32343      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154    93424    93578      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154    99280    99434      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154   163781   163935      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154   169390   169544      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154   174392   174546      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154   617819   617973      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154   929079   929233      +    no    1 0.53   0.0   49.8   2.4e-11 !   -
+PS-14_Unicycler_I2+N2_99127_S1_length_4237280_depth_1.00x_circular_true -         5_8S_rRNA            RF00002    cm        1      154  3198554  3198400      -    no    1 0.53   0.0   49.8   2.4e-11 !   -
