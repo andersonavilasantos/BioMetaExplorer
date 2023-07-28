@@ -32,5 +32,5 @@ df = pd.read_csv(args.csv)
 df = df.loc[(df['Library Source'] == args.libsource) & (df['Library Strategy'] == args.libstrategy)]
 
 # Apply the function to each run_access in the 'run_access' column
-for run_access in df['run_access']:
+for run_access in df['Experiment Accession']:
     download_sra(run_access, args.path)
