@@ -45,7 +45,7 @@ def list_folders(path):
                 os.makedirs(infernal_folder)
                 print(f"'infernal' folder created at {infernal_folder}")
 
-        run_mainv2(folder, infernal_folder)
+            run_mainv2(folder, infernal_folder)
 
     except Exception as e:
         print(f"An error occurred: {e}")
