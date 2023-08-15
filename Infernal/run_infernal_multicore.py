@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import glob
@@ -19,10 +18,8 @@ def run_mainv2(input_path, output_path):
         print(result.stdout)
         if result.stderr:
             print(f"Errors:\n{result.stderr}")
-
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 def process_folder(folder):
     parent_folder = os.path.dirname(folder.rstrip(os.sep))
@@ -34,7 +31,6 @@ def process_folder(folder):
 
     run_mainv2(folder, infernal_folder)
 
-
 def list_folders(path):
     """Lists the folders based on the provided glob pattern."""
     try:
@@ -44,10 +40,12 @@ def list_folders(path):
             print(f"No folders found for the path: {path}")
             return
 
-        # Using ThreadPoolExecutor to run processes in parallel
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            executor.map(process_folder, folders)
+        # Use all available cores
+        num_cores = os.cpu_count()
 
+        # Using ThreadPoolExecutor to run processes in parallel
+        with ThreadPoolExecutor(max_workers=num_cores) as executor:
+            executor.map(process_folder, folders)
     except Exception as e:
         print(f"An error occurred: {e}")
 
