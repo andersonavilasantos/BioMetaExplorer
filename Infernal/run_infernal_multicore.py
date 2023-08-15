@@ -31,6 +31,11 @@ def process_folder(folder):
 
     run_mainv2(folder, infernal_folder)
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 def list_folders(path):
     """Lists the folders based on the provided glob pattern."""
     try:
@@ -40,12 +45,17 @@ def list_folders(path):
             print(f"No folders found for the path: {path}")
             return
 
-        # Use all available cores
-        num_cores = os.cpu_count()
+        # Limit to 18 processes
+        max_processes = 12
 
-        # Using ThreadPoolExecutor to run processes in parallel
-        with ThreadPoolExecutor(max_workers=num_cores) as executor:
-            executor.map(process_folder, folders)
+        # Split the folders list into chunks of 18 folders each
+        folder_chunks = list(chunks(folders, max_processes))
+
+        for folder_chunk in folder_chunks:
+            # Using ThreadPoolExecutor to run processes in parallel
+            with ThreadPoolExecutor(max_workers=max_processes) as executor:
+                executor.map(process_folder, folder_chunk)
+
     except Exception as e:
         print(f"An error occurred: {e}")
 

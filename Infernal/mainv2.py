@@ -56,8 +56,9 @@ for file in files:
         copyfile(os.path.join(args.path, file), os.path.join(directory, file))  # Use the path argument here
 
     env = os.environ.copy()
-    env["INFERNAL NCPU"] = 2
-    subprocess.run(['cmsearch','--cut_ga','--rfam', '--nohmmonly', '--tblout', os.path.join(directory, name + '.tblout'), 'Rfam.cm', os.path.join(directory, file)])
+    env["INFERNAL_NCPU"] = 4
+    env["OMP_NUM_THREADS"] = 4
+    subprocess.run(['cmsearch','--cut_ga','--rfam', '--nohmmonly','--cpu', '4' ,'--tblout', os.path.join(directory, name + '.tblout'), 'Rfam.cm', os.path.join(directory, file)])
 
     subprocess.run(['esl-sfetch', '--index', os.path.join(directory, file)])
 
