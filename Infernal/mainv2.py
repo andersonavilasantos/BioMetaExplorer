@@ -27,19 +27,21 @@ def remove_equal_sequences(finput, foutput):
 # Creating an ArgumentParser object
 parser = argparse.ArgumentParser(description="Process the path to the genome folder.")
 # Adding argument
-parser.add_argument('path', type=str, help="Path to the genome folder.")
+parser.add_argument('-p', '--path', help='Path to the genome folder')
+parser.add_argument('-o', '--output', help='Output path to the extrated folder')
+
+
 # Parse the arguments
 args = parser.parse_args()
 
 start_time = time.time()
 
-print(os.getcwd())
 files = os.listdir(args.path)  # Use the path argument here
 
 for file in files:
 
     # Modify path to create new directory in the same location as the original genomes
-    path = os.path.join(args.path, 'Genomes-extracted')
+    path = args.output
     name = file.split('.')[0]
     directory = os.path.join(path, name)
 
