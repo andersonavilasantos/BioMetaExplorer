@@ -30,9 +30,6 @@ from hyperopt import hp, fmin, tpe, STATUS_OK, Trials, SparkTrials, early_stop
 from subprocess import Popen
 from multiprocessing import Manager
 
-# Test
-# python BioAutoML-feature.py --fasta_train data/train/Cis-reg.fasta data/train/rRNA.fasta --fasta_label_train Cis-reg rRNA --fasta_test data/test/Cis-reg.fasta data/test/rRNA.fasta --fasta_label_test Cis-reg rRNA --output results
-
 def objective_rf(space):
 
 	"""Automated Feature Engineering - Objective Function - Bayesian Optimization"""
@@ -774,7 +771,7 @@ if __name__ == '__main__':
 	parser.add_argument('-fasta_label_test', '--fasta_label_test', nargs='+',
 						help='labels for fasta files, e.g., ncRNA lncRNA circRNA')
 	parser.add_argument('-algorithm', '--algorithm', default=0, help='0 - Bayesian Optimization ---- 1 - Genetic Algorithm')
-	parser.add_argument('-estimations', '--estimations', default=100, help='number of estimations - BioAutoML - default = 50')
+	parser.add_argument('-estimations', '--estimations', default=100, help='number of estimations - BioAutoML - default = 100')
 	parser.add_argument('-n_cpu', '--n_cpu', default=-1, help='number of cpus - default = all')
 	parser.add_argument('-output', '--output', help='results directory, e.g., result/')
 

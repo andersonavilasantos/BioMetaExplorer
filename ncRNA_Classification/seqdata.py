@@ -14,6 +14,7 @@ class Seq:
         fasta_files = [fasta_dir + file for file in os.listdir(fasta_dir)]
         fasta_labels = [os.path.splitext(f.split('/')[-1])[0] for f in fasta_files]
 
+        self.fastas = fasta_files
         self.names = fasta_labels
 
         label_dict = {label: [1 if label_num == label else 0 for label_num in fasta_labels] for label in fasta_labels}

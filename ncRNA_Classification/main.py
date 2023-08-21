@@ -11,6 +11,7 @@ import pandas as pd
 from sklearn.metrics import classification_report
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
+import subprocess
 import optuna
 import numpy as np
 import seqdata
@@ -85,9 +86,18 @@ def load_data(train_path, test_path, encoding, feat_extraction, features_exist, 
             max_len.append(enc_length)
 
     if feat_extraction or encoding == 2:
-        print('Extracting features...')
-        train_data[0].feature_extraction(feat_extraction, True, features_exist)
-        test_data[0].feature_extraction(feat_extraction, False, features_exist)
+        print('Using Feature Engineering from BioAutoML...')
+        
+        train_fasta, train_labels = train_data[0].fastas, train_data[0].names
+        test_fasta, test_labels = test_data[0].fastas, test_data[0].names
+
+        if not features_exist:
+            subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
+                            ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
+            
+        train_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_train.csv").values.astype(np.float32)
+        test_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_test.csv").values.astype(np.float32)
+
         max_len.append(train_data[0].features.shape[1])
 
     return train_data, test_data, max_len
@@ -289,7 +299,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--k', default=1, help='Length of k-mers')
     parser.add_argument('-concat', '--concat', default=1, help='Concatenation type - 1: Directly, 2: Using dense layer before concatenation')
 
-    parser.add_argument('-feat_extraction', '--feat_extraction', default=0, nargs='+', help='Feature engineering using BioAutoML - 0: False, 1: True; Default: False')
+    parser.add_argument('-feat_extraction', '--feat_extraction', default=0, help='Feature engineering using BioAutoML - 0: False, 1: True; Default: False')
     parser.add_argument('-features_exist', '--features_exist', default=0, help='Features extracted previously - 0: False, 1: True; Default: False')
 
     # Choose between conventional and deep learning algorithms
