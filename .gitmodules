@@ -1,0 +1,3 @@
+[submodule "ncRNA_Classification/MathFeature"]
+	path = ncRNA_Classification/MathFeature
+	url = git@github.com:Bonidia/MathFeature.git
