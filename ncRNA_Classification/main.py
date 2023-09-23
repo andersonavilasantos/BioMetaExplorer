@@ -12,12 +12,14 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 import subprocess
+from subprocess import Popen
+import joblib
 import optuna
 import numpy as np
 import seqdata
 import argparse
 import warnings
-import os
+import os, shutil
 
 def conventional_models(algorithm, train_data, test_data):
     X_train, y_train = train_data[0].features, np.argmax(train_data[0].labels, axis=1)
@@ -72,7 +74,7 @@ def conventional_models(algorithm, train_data, test_data):
 
     df_report.to_csv(f'{output_folder}/results.csv')
     
-def load_data(train_path, test_path, encoding, feat_extraction, features_exist, k):
+def load_data(train_path, test_path, encoding, feat_extraction, k, load_model):
 
     train_data, test_data, max_len = [], [], []
 
@@ -91,12 +93,15 @@ def load_data(train_path, test_path, encoding, feat_extraction, features_exist, 
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
-        if not features_exist:
+        if not load_model:
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
             
-        train_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_train.csv").values.astype(np.float32)
-        test_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_test.csv").values.astype(np.float32)
+            subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'model/best_train.csv'])
+            
+            test_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_test.csv").values.astype(np.float32)
+
+        train_data[0].features = pd.read_csv("model/best_train.csv").values.astype(np.float32)
 
         max_len.append(train_data[0].features.shape[1])
 
@@ -258,8 +263,11 @@ def train_model(model, encoding, train_data, feat_extraction, epochs, patience, 
     if feat_extraction:
         X_train[-1] = scaling.fit_transform(X_train[-1])
         X_test[-1] = scaling.transform(X_test[-1])
+        joblib.dump(scaler, "model/scaler.pkl")
 
     model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=32, epochs=epochs, shuffle=True, callbacks=callbacks)
+
+    model.save("model/model.h5")
 
 def report_model(model, encoding, test_data, feat_extraction, scaling, output_file):
 
@@ -281,6 +289,101 @@ def report_model(model, encoding, test_data, feat_extraction, scaling, output_fi
 
     df_report.to_csv(output_file)
 
+def test_extraction(test_data):
+    datasets = []
+
+    path = 'model/feat_extraction'
+
+    try:
+        shutil.rmtree(path)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+        print('Creating Directory...')
+
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    preprocessed_fasta = path + '/prediction.fasta'
+    subprocess.run(['python', 'MathFeature/preprocessing/preprocessing.py',
+                    '-i', test_data[0].fastas[0], '-o', preprocessed_fasta],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    datasets.append(path + '/NAC.csv')
+    datasets.append(path + '/DNC.csv')
+    datasets.append(path + '/TNC.csv')
+    datasets.append(path + '/kGap_di.csv')
+    datasets.append(path + '/kGap_tri.csv')
+    datasets.append(path + '/ORF.csv')
+    datasets.append(path + '/Fickett.csv')
+    datasets.append(path + '/Shannon.csv')
+    datasets.append(path + '/FourierBinary.csv')
+    datasets.append(path + '/FourierComplex.csv')
+    datasets.append(path + '/Tsallis.csv')
+    datasets.append(path + '/repDNA.csv')
+
+    commands = [['python', 'MathFeature/methods/ExtractionTechniques.py',
+                        '-i', preprocessed_fasta, '-o', path + '/NAC.csv', '-l', 'predict',
+                        '-t', 'NAC', '-seq', '1'],
+
+                ['python', 'MathFeature/methods/ExtractionTechniques.py', '-i',
+                        preprocessed_fasta, '-o', path + '/DNC.csv', '-l', 'predict',
+                        '-t', 'DNC', '-seq', '1'],
+
+                ['python', 'MathFeature/methods/ExtractionTechniques.py', '-i',
+                        preprocessed_fasta, '-o', path + '/TNC.csv', '-l', 'predict',
+                        '-t', 'TNC', '-seq', '1'],
+                ['python', 'MathFeature/methods/Kgap.py', '-i',
+                        preprocessed_fasta, '-o', path + '/kGap_di.csv', '-l',
+                        'predict', '-k', '1', '-bef', '1',
+                        '-aft', '2', '-seq', '1'],
+                ['python', 'MathFeature/methods/Kgap.py', '-i',
+                        preprocessed_fasta, '-o', path + '/kGap_tri.csv', '-l',
+                        'predict', '-k', '1', '-bef', '1',
+                        '-aft', '3', '-seq', '1'],
+                ['python', 'MathFeature/methods/CodingClass.py', '-i',
+                        preprocessed_fasta, '-o', path + '/ORF.csv', '-l', 'predict'],
+                ['python', 'MathFeature/methods/FickettScore.py', '-i',
+                        preprocessed_fasta, '-o', path + '/Fickett.csv', '-l', 'predict',
+                        '-seq', '1'],
+                ['python', 'MathFeature/methods/EntropyClass.py', '-i',
+                        preprocessed_fasta, '-o', path + '/Shannon.csv', '-l', 'predict',
+                        '-k', '5', '-e', 'Shannon'],
+                ['python', 'MathFeature/methods/FourierClass.py', '-i',
+                        preprocessed_fasta, '-o', path + '/FourierBinary.csv', '-l', 'predict',
+                        '-r', '1'],
+                ['python', 'other-methods/FourierClass.py', '-i',
+                        preprocessed_fasta, '-o', path + '/FourierComplex.csv', '-l', 'predict',
+                        '-r', '6'],
+                ['python', 'other-methods/TsallisEntropy.py', '-i',
+                        preprocessed_fasta, '-o', path + '/Tsallis.csv', '-l', 'predict',
+                        '-k', '5', '-q', '2.3'],
+                ['python', 'other-methods/repDNA/repDNA-feat.py', '--file',
+                        preprocessed_fasta, '--output', path + '/repDNA.csv', '--label', 'predict']
+    ]
+
+    processes = [Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) for cmd in commands]
+    for p in processes: p.wait()
+
+    if datasets:
+        datasets = list(dict.fromkeys(datasets))
+        dataframes = pd.concat([pd.read_csv(f) for f in datasets], axis=1)
+        dataframes = dataframes.loc[:, ~dataframes.columns.duplicated()]
+        dataframes = dataframes[~dataframes.nameseq.str.contains("nameseq")]
+
+    X_test = dataframes
+    y_test = X_test.pop('label')
+    nameseq_test = X_test.pop('nameseq')
+    fnameseqtest = path + '/fnameseqtest.csv'
+    nameseq_test.to_csv(fnameseqtest, index=False, header=True)
+    ftest = path + '/ftest.csv'
+    X_test.to_csv(ftest, index=False)
+    flabeltest = path + '/flabeltest.csv'
+    y_test.to_csv(flabeltest, index=False, header=True)
+
+# python main.py --train data/train/ --test data/test/ --epochs 1 --patience 20 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
+
+# python main.py --train data/train/ --test data/test/ --load_model 1 --epochs 1 --patience 20 --encoding 1 --k 1 --feat_extraction 1 --output results/t1
+
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
     warnings.filterwarnings('ignore')
@@ -300,7 +403,6 @@ if __name__ == '__main__':
     parser.add_argument('-concat', '--concat', default=1, help='Concatenation type - 1: Directly, 2: Using dense layer before concatenation')
 
     parser.add_argument('-feat_extraction', '--feat_extraction', default=0, help='Feature engineering using BioAutoML - 0: False, 1: True; Default: False')
-    parser.add_argument('-features_exist', '--features_exist', default=0, help='Features extracted previously - 0: False, 1: True; Default: False')
 
     # Choose between conventional and deep learning algorithms
     parser.add_argument('-algorithm', '--algorithm', default=2, help='Algorithm - 0: Support Vector Machines (SVM), 1: Extreme Gradient Boosting (XGBoost), 2: Deep Learning')
@@ -319,6 +421,9 @@ if __name__ == '__main__':
     # Output folder
     parser.add_argument('-output', '--output', default=0, help='Output folder for classification reports.')
 
+    # Load saved model
+    parser.add_argument('-load_model', '--load_model', default=0, help='Load saved model - 0: False, 1: True; Default: False')
+
     args = parser.parse_args()
 
     train_path = args.train
@@ -333,22 +438,50 @@ if __name__ == '__main__':
 
     feat_extraction = int(args.feat_extraction)
     
-    features_exist = int(args.features_exist)
-
     output_folder = args.output
+
+    load_model = int(args.load_model)
 
     conv_params = {'num_convs': int(args.num_convs), 'activation': int(args.activation), 'batch_norm': int(args.batch_norm) , 'dropout': float(args.cnn_dropout)}
 
     lstm_params = {'num_lstm': int(args.num_lstm), 'bidirectional': int(args.bidirectional), 'dropout': float(args.lstm_dropout)}
 
-    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, features_exist, k)
+    # folder for model
+    if not load_model:
+        path = 'model'
+
+        try:
+            shutil.rmtree(path)
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
+            print('Creating Directory...')
+
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+
+    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, load_model)
 
     num_labels = len(train_data[0].names)
 
     os.makedirs(output_folder, exist_ok=True)
 
     if algorithm == 2:
-        model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
+
+        scaler = StandardScaler()
+
+        if load_model:
+            model = tf.keras.models.load_model("model/model.h5")
+
+            if feat_extraction:
+                scaler = joblib.load("model/scaler.pkl")
+
+                test_extraction(test_data)
+        else:
+            model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
+
+            train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaler)
+
+            report_model(model, encoding, test_data, feat_extraction, scaler, f'{output_folder}/results.csv')
 
         tf.keras.utils.plot_model(
             model,
@@ -362,11 +495,6 @@ if __name__ == '__main__':
             layer_range=None,
             show_layer_activations=False
         )
-
-        scaler = StandardScaler()
-
-        train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaler)
-
-        report_model(model, encoding, test_data, feat_extraction, scaler, f'{output_folder}/results.csv')
+        
     else:
         conventional_models(algorithm, train_data, test_data)
