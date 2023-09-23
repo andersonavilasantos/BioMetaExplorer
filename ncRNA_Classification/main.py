@@ -283,7 +283,7 @@ def report_model(model, encoding, test_data, feat_extraction, scaling, output_fi
     y_pred = np.argmax(model_pred, axis=1)
     y_true = np.argmax(test_data[0].labels, axis=1)
 
-    report = classification_report(y_true, y_pred, target_names=test_data[0].names, output_dict=True)
+    report = classification_report(y_true, y_pred, target_names=train_data[0].names, output_dict=True)
     
     df_report = pd.DataFrame(report).T
 
@@ -370,19 +370,39 @@ def test_extraction(test_data):
         dataframes = dataframes.loc[:, ~dataframes.columns.duplicated()]
         dataframes = dataframes[~dataframes.nameseq.str.contains("nameseq")]
 
-    X_test = dataframes
-    y_test = X_test.pop('label')
-    nameseq_test = X_test.pop('nameseq')
-    fnameseqtest = path + '/fnameseqtest.csv'
-    nameseq_test.to_csv(fnameseqtest, index=False, header=True)
-    ftest = path + '/ftest.csv'
-    X_test.to_csv(ftest, index=False)
-    flabeltest = path + '/flabeltest.csv'
-    y_test.to_csv(flabeltest, index=False, header=True)
+    dataframes.pop('label')
+    nameseqs = dataframes.pop('nameseq')
 
-# python main.py --train data/train/ --test data/test/ --epochs 1 --patience 20 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
+    df_train = pd.read_csv("model/best_train.csv")
 
-# python main.py --train data/train/ --test data/test/ --load_model 1 --epochs 1 --patience 20 --encoding 1 --k 1 --feat_extraction 1 --output results/t1
+    common_columns = dataframes.columns.intersection(df_train.columns)
+    df_predict = dataframes[common_columns]
+
+    return df_predict, nameseqs
+
+def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaling, output):
+
+    if encoding == 2:
+        features = scaling.transform(test_data[0].features)
+    else:
+        features = [test.seqs for test in test_data]
+
+        if feat_extraction:
+            features.append(scaling.transform(test_data[0].features))
+
+    model_pred = model.predict(features)
+
+    df_predicted = pd.DataFrame(model_pred, columns=train_data[0].names)
+
+    df_predicted = pd.concat([nameseqs, df_predicted], axis=1)
+
+    df_predicted['prediction'] = [train_data[0].names[index] for index in np.argmax(model_pred, axis=1)]
+
+    df_predicted.to_csv(output, index=False)
+
+# python main.py --train data/train/ --test data/test/ --epochs 10 --patience 20 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
+
+# python main.py --train data/train/ --test data/predict/ --load_model 1 --encoding 1 --k 1 --feat_extraction 1 --output results/predict
 
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
@@ -475,7 +495,11 @@ if __name__ == '__main__':
             if feat_extraction:
                 scaler = joblib.load("model/scaler.pkl")
 
-                test_extraction(test_data)
+                df_predict, nameseqs = test_extraction(test_data)
+
+                test_data[0].features = df_predict
+
+                predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler,  f'{output_folder}/model_predictions.csv')
         else:
             model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
 
