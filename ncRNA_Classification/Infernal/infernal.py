@@ -21,11 +21,11 @@ def extract_seqs(genomes_folder, output_folder, labels):
 
 def fetch_cm(rfam_cm, labels):
     for label in labels:
-        cm_output = open(f'cms/{label}.cm', 'a')
-        subprocess.run(['cmfetch', '-f', rfam_cm, f'accessions/{label}.txt'], stdout=cm_output)
+        with open(f'Infernal/cms/{label}.cm', 'w') as cm_output:
+            subprocess.run(['cmfetch', '-f', rfam_cm, f'Infernal/accessions/{label}.txt'], stdout=cm_output)
 
 if __name__ == '__main__':
-    labels = ['rRNA', 'tRNA', 'sRNA', 'Cis-reg']
+    labels = ['rRNA', 'tRNA', 'sRNA', 'Cis-reg', 'unknown']
 
     fetch_cm('Infernal/Rfam.cm', labels)
-    extract_seqs("genomes", "sequences", labels)
+    #extract_seqs("genomes", "sequences", labels)
