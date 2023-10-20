@@ -44,7 +44,7 @@ for file in files:
 	if os.path.exists('Genomes/' + file):
 		copyfile('Genomes/' + file, directory + file)
 
-	subprocess.run(['cmsearch', '--cut_ga', '--rfam', '--nohmmonly', '--tblout', str(directory + name + '.tblout'), 'Rfam.cm', str(directory + file)])
+	subprocess.run(['cmsearch', '--cut_ga', '--rfam', '--nohmmonly','--cpu', '4', '--tblout', str(directory + name + '.tblout'), 'Rfam.cm', str(directory + file)])
 
 	subprocess.run(['esl-sfetch', '--index', str(directory + file)])
 
