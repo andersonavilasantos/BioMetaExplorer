@@ -14,7 +14,7 @@ import xgboost as xgb
 import lightgbm as lgb
 import optuna
 import pygad
-from genetic_selection import GeneticSelectionCV
+#from genetic_selection import GeneticSelectionCV
 from catboost import CatBoostClassifier
 from sklearn.metrics import balanced_accuracy_score
 # from sklearn.preprocessing import StandardScaler
