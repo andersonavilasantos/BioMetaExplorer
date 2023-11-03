@@ -31,7 +31,8 @@ def remove_equal_sequences(finput, foutput):
 def run_mainv2(file_path, output_path, cpu):
     """Executa mainv2.py como subprocesso."""
     try:
-        name = os.path.basename(file_path).split('.')[0]
+        name_with_extension = os.path.basename(file_path)
+        name, _ = os.path.splitext(name_with_extension)
         directory = os.path.join(output_path, name)
 
         # Verifica se o diretório e o arquivo de saída esperado já existem
