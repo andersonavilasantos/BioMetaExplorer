@@ -3,7 +3,7 @@ import warnings
 import subprocess
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from Bio import SeqIO
 from shutil import copyfile
 import glob
@@ -34,8 +34,13 @@ def run_mainv2(file_path, output_path, cpu):
         name = os.path.basename(file_path).split('.')[0]
         directory = os.path.join(output_path, name)
 
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        # Verifica se o diretório e o arquivo de saída esperado já existem
+        expected_output_file = os.path.join(directory, name + '.tblout')
+        if os.path.exists(directory) and os.path.isfile(expected_output_file):
+            print(f"Pasta já existe e a análise está completa para: {name}")
+            return
+
+        os.makedirs(directory, exist_ok=True)
 
         copyfile(file_path, os.path.join(directory, os.path.basename(file_path)))
 
@@ -43,9 +48,9 @@ def run_mainv2(file_path, output_path, cpu):
         env["INFERNAL_NCPU"] = str(cpu)
         env["OMP_NUM_THREADS"] = str(cpu)
         subprocess.run(['cmsearch', '--cut_ga', '--rfam', '--nohmmonly', '--cpu', str(cpu), '--tblout',
-                        os.path.join(directory, name + '.tblout'), 'Rfam.cm', os.path.join(directory, os.path.basename(file_path))])
+                        expected_output_file, 'Rfam.cm', os.path.join(directory, os.path.basename(file_path))])
         subprocess.run(['esl-sfetch', '--index', os.path.join(directory, os.path.basename(file_path))])
-        subprocess.run(['sh', 'run_infernal.sh', os.path.join(directory, name + '.tblout'),
+        subprocess.run(['sh', 'run_infernal.sh', expected_output_file,
                         os.path.join(directory, os.path.basename(file_path)), os.path.join(directory, 'seqs.fasta')])
         remove_equal_sequences(os.path.join(directory, 'seqs.fasta'), os.path.join(directory, 'prep_seqs.fasta'))
 
@@ -54,7 +59,7 @@ def run_mainv2(file_path, output_path, cpu):
 
 
 def list_files(folder_path, output_path, max_processes, cpu):
-    """Lista arquivos com extensões .fa, .fas ou .fasta na pasta fornecida."""
+    """Lista arquivos e executa em paralelo utilizando ProcessPoolExecutor."""
     try:
         file_extensions = ["*.fa", "*.fas", "*.fasta"]
         files = [file for ext in file_extensions for file in glob.glob(os.path.join(folder_path, ext))]
@@ -63,11 +68,8 @@ def list_files(folder_path, output_path, max_processes, cpu):
             print(f"Nenhum arquivo encontrado no caminho: {folder_path}")
             return
 
-        chunks = [files[i:i + max_processes] for i in range(0, len(files), max_processes)]
-
-        for chunk in chunks:
-            with ThreadPoolExecutor(max_workers=max_processes) as executor:
-                executor.map(run_mainv2, chunk, [output_path]*len(chunk), [cpu]*len(chunk))
+        with ProcessPoolExecutor(max_workers=max_processes) as executor:
+            executor.map(run_mainv2, files, [output_path] * len(files), [cpu] * len(files))
 
     except Exception as e:
         print(f"Ocorreu um erro: {e}")
@@ -88,7 +90,6 @@ if __name__ == "__main__":
     execution_time = end_time - start_time
     print(f"Tempo de execução: {execution_time} segundos")
 
-
-
-    #python3 run_infernal.py -p /home/anderson/Documents/PhD\ Files/Genomes-test -o /home/anderson/Documents/PhD\ Files/Genomes-test --max_processes 4 --cpu 3
+# Exemplo de uso:
+# python3 run_infernal.py -p /caminho/para/os/arquivos/genomas -o /caminho/para/pasta/de/saida --max_processes 4 --cpu 3
 
