@@ -1,16 +1,16 @@
 import Bio.SeqIO
 import pyrodigal
 import pyhmmer
-from pyhmmer.easel import SequenceFile
 from pyhmmer.plan7 import HMMFile
 import collections
 import subprocess
 from tqdm import tqdm
 import os
+import tempfile
 
 def extract_orfs(genome_files, meta, output):
     with open(output, "w") as file:
-        for genome in tqdm(genome_files, desc="Extracting ORFs"):
+        for genome in tqdm(genome_files, desc="Extracting ORFs from genomes"):
             record = Bio.SeqIO.read(genome, "fasta")
             find_orfs(record, meta, file)
 
@@ -119,13 +119,21 @@ def identify_spurious_proteins(protein_ids, input_file, output_file, original_or
 
 if __name__ == "__main__":
     genome_folder = "data"
-    meta = False
+    meta = False # False if MAG, True if Metagenome
     genome_files = [os.path.join(genome_folder, file) for file in os.listdir(genome_folder) if file.endswith(".fasta")]
     
-    extract_orfs(genome_files, meta, "orfs.fasta")
-    remove_duplicates("orfs.fasta", "preprocessed.fasta")
-    translate_sequences("preprocessed.fasta", "proteins_1.fasta")
-    protein_ids = identify_pfam_families("proteins_1.fasta", "proteins_2.fasta")
-    identify_spurious_proteins(protein_ids, "proteins_2.fasta", "coding.fasta", "orfs.fasta")
-                
+    # Create a temporary directory to store the files
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_folder = tmp_dir
+        orfs_output = os.path.join(tmp_folder, "orfs.fasta")
+        preprocessed_output = os.path.join(tmp_folder, "preprocessed.fasta")
+        proteins_1_output = os.path.join(tmp_folder, "proteins_1.fasta")
+        proteins_2_output = os.path.join(tmp_folder, "proteins_2.fasta")
+        
+        extract_orfs(genome_files, meta, orfs_output)
+        remove_duplicates(orfs_output, preprocessed_output)
+        translate_sequences(preprocessed_output, proteins_1_output)
+        protein_ids = identify_pfam_families(proteins_1_output, proteins_2_output)
+        identify_spurious_proteins(protein_ids, proteins_2_output, "coding.fasta", orfs_output)
+        
     print("----- Removed spurious proteins and saved coding sequences -----")
