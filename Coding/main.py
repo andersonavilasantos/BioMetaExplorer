@@ -9,10 +9,12 @@ import os
 import tempfile
 
 def extract_orfs(genome_files, meta, output):
-    with open(output, "w") as file:
-        for genome in tqdm(genome_files, desc="Extracting ORFs from genomes"):
+    for genome in tqdm(genome_files, desc="Extracting ORFs from genomes"):
+        with open(output, "a") as file:
             record = Bio.SeqIO.read(genome, "fasta")
             find_orfs(record, meta, file)
+        
+        remove_duplicates(output)
 
 def find_orfs(record, meta, output_file):
     orf_finder = pyrodigal.GeneFinder(meta=meta)
@@ -26,10 +28,16 @@ def find_orfs(record, meta, output_file):
         output_file.write(f">{record.id}_{i+1}\n")
         output_file.write(f"{pred.sequence()}\n")
 
-def remove_duplicates(input_file, output_file):
+def remove_duplicates(input_file):
     command = ["seqkit", "rmdup", "-s", input_file]
-    with open(output_file, "w") as output_file:
-        subprocess.run(command, stdout=output_file)
+
+    completed_process = subprocess.run(command, stdout=subprocess.PIPE, text=True)
+
+    if completed_process.returncode == 0:
+        with open(input_file, "w") as output:
+            output.write(completed_process.stdout)
+    else:
+        print("Error: seqkit command failed.")
 
 def translate_sequences(input_file, output_file):
     with open(output_file, "w") as file:
@@ -126,13 +134,11 @@ if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_folder = tmp_dir
         orfs_output = os.path.join(tmp_folder, "orfs.fasta")
-        preprocessed_output = os.path.join(tmp_folder, "preprocessed.fasta")
         proteins_1_output = os.path.join(tmp_folder, "proteins_1.fasta")
         proteins_2_output = os.path.join(tmp_folder, "proteins_2.fasta")
         
         extract_orfs(genome_files, meta, orfs_output)
-        remove_duplicates(orfs_output, preprocessed_output)
-        translate_sequences(preprocessed_output, proteins_1_output)
+        translate_sequences(orfs_output, proteins_1_output)
         protein_ids = identify_pfam_families(proteins_1_output, proteins_2_output)
         identify_spurious_proteins(protein_ids, proteins_2_output, "coding.fasta", orfs_output)
         
