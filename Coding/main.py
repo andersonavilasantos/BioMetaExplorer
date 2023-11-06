@@ -10,9 +10,10 @@ import tempfile
 
 def extract_orfs(genome_files, meta, output):
     for genome in tqdm(genome_files, desc="Extracting ORFs from genomes"):
-        with open(output, "a") as file:
-            record = Bio.SeqIO.read(genome, "fasta")
-            find_orfs(record, meta, file)
+        with open(genome, "r") as genome_handle:
+            for record in Bio.SeqIO.parse(genome_handle, "fasta"):
+                with open(output, "a") as file:
+                    find_orfs(record, meta, file)
         
         remove_duplicates(output)
 
