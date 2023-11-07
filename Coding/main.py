@@ -9,31 +9,30 @@ import os
 import tempfile
 
 def extract_orfs(genome_files, meta, output):
-    for genome in tqdm(genome_files, desc="Extracting ORFs from genomes"):
-        with open(genome, "r") as genome_handle:
-            for record in Bio.SeqIO.parse(genome_handle, "fasta"):
-                with open(output, "a") as file:
-                    find_orfs(record, meta, file)
-        
+    with ProcessPoolExecutor(max_workers=85) as executor:
+        futures = [executor.submit(find_orfs, genome, meta, output) for genome in genome_files]
+        for future in tqdm(futures, desc="Extracting ORFs from genomes"):
+            future.result()  # Block until the future is done
         remove_duplicates(output)
 
-def find_orfs(record, meta, output_file):
+def find_orfs(genome, meta, output):
     orf_finder = pyrodigal.GeneFinder(meta=meta)
-    if meta:
-        genes = orf_finder.find_genes(bytes(record.seq))
-    else:
-        orf_finder.train(bytes(record.seq))
-        genes = orf_finder.find_genes(bytes(record.seq))
-
-    for i, pred in enumerate(genes):
-        output_file.write(f">{record.id}_{i+1}\n")
-        output_file.write(f"{pred.sequence()}\n")
+    sequences = []
+    with open(genome, "r") as genome_handle:
+        for record in Bio.SeqIO.parse(genome_handle, "fasta"):
+            if meta:
+                genes = orf_finder.find_genes(bytes(record.seq))
+            else:
+                orf_finder.train(bytes(record.seq))
+                genes = orf_finder.find_genes(bytes(record.seq))
+            for i, pred in enumerate(genes):
+                sequences.append(f">{record.id}_{i+1}\n{pred.sequence()}\n")
+    with open(output, "a") as file:
+        file.writelines(sequences)
 
 def remove_duplicates(input_file):
     command = ["seqkit", "rmdup", "-s", input_file]
-
     completed_process = subprocess.run(command, stdout=subprocess.PIPE, text=True)
-
     if completed_process.returncode == 0:
         with open(input_file, "w") as output:
             output.write(completed_process.stdout)
@@ -125,13 +124,12 @@ def identify_spurious_proteins(protein_ids, input_file, output_file, original_or
             if record.id in coding_ids:
                 file.write(f">{record.id}\n")
                 file.write(f"{record.seq}\n")
-
+                
 if __name__ == "__main__":
-    genome_folder = "data"
-    meta = False # False if MAG, True if Metagenome
+    genome_folder = "/mnt/UFZ-Data/anderson/lina-data"
+    meta = True  # or False if MAG
     genome_files = [os.path.join(genome_folder, file) for file in os.listdir(genome_folder) if file.endswith(".fasta")]
     
-    # Create a temporary directory to store the files
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_folder = tmp_dir
         orfs_output = os.path.join(tmp_folder, "orfs.fasta")
