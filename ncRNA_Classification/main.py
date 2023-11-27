@@ -93,7 +93,7 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, f
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
-        if not load_model or not features_exist:
+        if not load_model and not features_exist:
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
             
