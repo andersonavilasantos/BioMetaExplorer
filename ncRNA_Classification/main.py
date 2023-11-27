@@ -74,7 +74,7 @@ def conventional_models(algorithm, train_data, test_data):
 
     df_report.to_csv(f'{output_folder}/results.csv')
     
-def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, bioautoml):
+def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, features_exist):
 
     train_data, test_data, max_len = [], [], []
 
@@ -93,7 +93,7 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, b
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
-        if not load_model and bioautoml:
+        if not load_model or not features_exist:
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
             
@@ -423,7 +423,8 @@ if __name__ == '__main__':
     parser.add_argument('-concat', '--concat', default=1, help='Concatenation type - 1: Directly, 2: Using dense layer before concatenation')
 
     parser.add_argument('-feat_extraction', '--feat_extraction', default=0, help='Feature engineering using BioAutoML - 0: False, 1: True; Default: False')
-
+    #Exec BioAutlML
+    parser.add_argument('-features_exist ', '--features_exist ', default=0, help='If features exists - 0: False, 1: True; Default: True')
     # Choose between conventional and deep learning algorithms
     parser.add_argument('-algorithm', '--algorithm', default=2, help='Algorithm - 0: Support Vector Machines (SVM), 1: Extreme Gradient Boosting (XGBoost), 2: Deep Learning')
 
@@ -444,8 +445,7 @@ if __name__ == '__main__':
     # Load saved model
     parser.add_argument('-load_model', '--load_model', default=0, help='Load saved model - 0: False, 1: True; Default: False')
     
-    #Exec BioAutlML
-    parser.add_argument('-bioautoml', '--bioautoml', default=1, help='Load saved model - 0: False, 1: True; Default: True')
+
 
     args = parser.parse_args()
 
@@ -464,7 +464,7 @@ if __name__ == '__main__':
     output_folder = args.output
 
     load_model = int(args.load_model)
-    bioautoml = int(args.bioautoml)
+    features_exist = int(args.features_exist)
 
     conv_params = {'num_convs': int(args.num_convs), 'activation': int(args.activation), 'batch_norm': int(args.batch_norm) , 'dropout': float(args.cnn_dropout)}
 
@@ -483,7 +483,7 @@ if __name__ == '__main__':
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, load_model, bioautoml)
+    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, load_model, features_exist)
 
     num_labels = len(train_data[0].names)
 
