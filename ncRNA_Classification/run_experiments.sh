@@ -1,7 +1,7 @@
 # -- Conventional --
 
-#python main.py --algorithm 0 --train /mnt/UFZ-Data/anderson/NAR-Data/train/ --test /mnt/UFZ-Data/anderson/NAR-Data/test/--feat_extraction 1 --output results/svm
-#python main.py --algorithm 1 --train /mnt/UFZ-Data/anderson/NAR-Data/train/ --test /mnt/UFZ-Data/anderson/NAR-Data/test/--feat_extraction 1 --features_exist 1 --output results/xgboost
+#python main.py --algorithm 0 --train /mnt/UFZ-Data/anderson/NAR-Data/train/ --test /mnt/UFZ-Data/anderson/NAR-Data/test/ --feat_extraction 1 --output results/svm
+#python main.py --algorithm 1 --train /mnt/UFZ-Data/anderson/NAR-Data/train/ --test /mnt/UFZ-Data/anderson/NAR-Data/test/ --feat_extraction 1 --features_exist 1 --output results/xgboost
 
 # -- Deep Learning --
 
