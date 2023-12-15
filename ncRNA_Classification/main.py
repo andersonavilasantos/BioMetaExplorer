@@ -74,7 +74,7 @@ def conventional_models(algorithm, train_data, test_data):
 
     df_report.to_csv(f'{output_folder}/results.csv')
     
-def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, features_exist):
+def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist):
 
     train_data, test_data, max_len = [], [], []
 
@@ -93,15 +93,23 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, load_model, f
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
-        if not load_model and not features_exist:
+        if path_model:
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
+        
+            subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'features/best_train.csv'])
+            subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_test.csv', 'features/best_test.csv'])
+                
+        else:
+            if not features_exist:
+                subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
+                                ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
             
-            subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'model/best_train.csv'])
-            
-            test_data[0].features = pd.read_csv("bioautoml-results/best_descriptors/best_test.csv").values.astype(np.float32)
+                subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'features/best_train.csv'])
+                subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_test.csv', 'features/best_test.csv'])
 
-        train_data[0].features = pd.read_csv("model/best_train.csv").values.astype(np.float32)
+        train_data[0].features = pd.read_csv("features/best_train.csv").values.astype(np.float32)
+        test_data[0].features = pd.read_csv("features/best_test.csv").values.astype(np.float32)
 
         max_len.append(train_data[0].features.shape[1])
 
@@ -231,7 +239,7 @@ def create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv
 
     return model
 
-def train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaling):
+def train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaling, output_folder):
 
     callbacks = [
         EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True, verbose=1)
@@ -263,11 +271,11 @@ def train_model(model, encoding, train_data, feat_extraction, epochs, patience, 
     if feat_extraction:
         X_train[-1] = scaling.fit_transform(X_train[-1])
         X_test[-1] = scaling.transform(X_test[-1])
-        joblib.dump(scaler, "model/scaler.pkl")
+        joblib.dump(scaler, "features/scaler.pkl")
 
     model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=32, epochs=epochs, shuffle=True, callbacks=callbacks)
 
-    model.save("model/model.h5")
+    model.save(f"{output_folder}/model.h5")
 
 def report_model(model, encoding, test_data, feat_extraction, scaling, output_file):
 
@@ -292,7 +300,7 @@ def report_model(model, encoding, test_data, feat_extraction, scaling, output_fi
 def test_extraction(test_data):
     datasets = []
 
-    path = 'model/feat_extraction'
+    path = 'features/feat_extraction'
 
     try:
         shutil.rmtree(path)
@@ -373,7 +381,7 @@ def test_extraction(test_data):
     dataframes.pop('label')
     nameseqs = dataframes.pop('nameseq')
 
-    df_train = pd.read_csv("model/best_train.csv")
+    df_train = pd.read_csv("features/best_train.csv")
 
     common_columns = dataframes.columns.intersection(df_train.columns)
     df_predict = dataframes[common_columns]
@@ -400,9 +408,9 @@ def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extracti
 
     df_predicted.to_csv(output, index=False)
 
-# python main.py --train data/train/ --test data/test/ --epochs 10 --patience 20 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
+# python main.py --train data/train/ --test data/test/ --epochs 10 --patience 5 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
 
-# python main.py --train data/train/ --test data/predict/ --load_model 1 --encoding 1 --k 1 --feat_extraction 1 --output results/predict
+# python main.py --train data/train/ --test data/predict/ --path_model path/model.h5 --encoding 1 --k 1 --feat_extraction 1 --features_exist 1 --output results/predict
 
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
@@ -421,10 +429,11 @@ if __name__ == '__main__':
     parser.add_argument('-encoding', '--encoding', default=0, help='Encoding - 0: One-hot encoding, 1: K-mer embedding, 2: No encoding (only feature extraction), 3: All encodings (without feature extraction)')
     parser.add_argument('-k', '--k', default=1, help='Length of k-mers')
     parser.add_argument('-concat', '--concat', default=1, help='Concatenation type - 1: Directly, 2: Using dense layer before concatenation')
-
+    
+    # Run BioAutoML
     parser.add_argument('-feat_extraction', '--feat_extraction', default=0, help='Feature engineering using BioAutoML - 0: False, 1: True; Default: False')
-    #Exec BioAutlML
-    parser.add_argument('-features_exist ', '--features_exist ', default=0, help='If features exists - 0: False, 1: True; Default: True')
+    
+    parser.add_argument('-features_exist', '--features_exist', default=0, help='If features exists - 0: False, 1: True; Default: True')
     # Choose between conventional and deep learning algorithms
     parser.add_argument('-algorithm', '--algorithm', default=2, help='Algorithm - 0: Support Vector Machines (SVM), 1: Extreme Gradient Boosting (XGBoost), 2: Deep Learning')
 
@@ -443,10 +452,8 @@ if __name__ == '__main__':
     parser.add_argument('-output', '--output', default=0, help='Output folder for classification reports.')
 
     # Load saved model
-    parser.add_argument('-load_model', '--load_model', default=0, help='Load saved model - 0: False, 1: True; Default: False')
+    parser.add_argument('-path_model', '--path_model', help='Path to load saved model')
     
-
-
     args = parser.parse_args()
 
     train_path = args.train
@@ -463,7 +470,7 @@ if __name__ == '__main__':
     
     output_folder = args.output
 
-    load_model = int(args.load_model)
+    path_model = args.path_model
     features_exist = int(args.features_exist)
 
     conv_params = {'num_convs': int(args.num_convs), 'activation': int(args.activation), 'batch_norm': int(args.batch_norm) , 'dropout': float(args.cnn_dropout)}
@@ -471,8 +478,8 @@ if __name__ == '__main__':
     lstm_params = {'num_lstm': int(args.num_lstm), 'bidirectional': int(args.bidirectional), 'dropout': float(args.lstm_dropout)}
 
     # folder for model
-    if not load_model:
-        path = 'model'
+    if not features_exist:
+        path = 'features'
 
         try:
             shutil.rmtree(path)
@@ -483,7 +490,7 @@ if __name__ == '__main__':
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, load_model, features_exist)
+    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
 
     num_labels = len(train_data[0].names)
 
@@ -493,11 +500,11 @@ if __name__ == '__main__':
 
         scaler = StandardScaler()
 
-        if load_model:
-            model = tf.keras.models.load_model("model/model.h5")
+        if path_model:
+            model = tf.keras.models.load_model(path_model)
 
             if feat_extraction:
-                scaler = joblib.load("model/scaler.pkl")
+                scaler = joblib.load('features/scaler.pkl')
 
                 df_predict, nameseqs = test_extraction(test_data)
 
@@ -507,7 +514,7 @@ if __name__ == '__main__':
         else:
             model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
 
-            train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaler)
+            train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaler, output_folder)
 
             report_model(model, encoding, test_data, feat_extraction, scaler, f'{output_folder}/results.csv')
 

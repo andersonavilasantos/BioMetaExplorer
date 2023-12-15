@@ -7,9 +7,10 @@ import subprocess
 from tqdm import tqdm
 import os
 import tempfile
+from concurrent.futures import ProcessPoolExecutor
 
 def extract_orfs(genome_files, meta, output):
-    with ProcessPoolExecutor(max_workers=85) as executor:
+    with ProcessPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(find_orfs, genome, meta, output) for genome in genome_files]
         for future in tqdm(futures, desc="Extracting ORFs from genomes"):
             future.result()  # Block until the future is done
@@ -126,7 +127,7 @@ def identify_spurious_proteins(protein_ids, input_file, output_file, original_or
                 file.write(f"{record.seq}\n")
                 
 if __name__ == "__main__":
-    genome_folder = "/mnt/UFZ-Data/anderson/lina-data"
+    genome_folder = "data"
     meta = True  # or False if MAG
     genome_files = [os.path.join(genome_folder, file) for file in os.listdir(genome_folder) if file.endswith(".fasta")]
     
