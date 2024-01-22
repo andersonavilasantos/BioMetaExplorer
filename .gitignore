@@ -165,5 +165,7 @@ Infernal/Genomes-Finished
 Data/21667763
 Data/
 Infernal/Genomes
-bioautoml-results/feat_extraction
-bioautoml-results/best_descriptors
+Classification/bioautoml-results/feat_extraction
+Classification/bioautoml-results/best_descriptors
+Classification/features
+Classification/results
