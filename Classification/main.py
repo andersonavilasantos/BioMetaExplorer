@@ -76,7 +76,7 @@ def conventional_models(algorithm, train_data, test_data):
     
 def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist):
 
-    train_data, test_data, max_len = [], [], []
+    train_data, test_data, max_len, nameseqs = [], [], [], []
 
     for enc in range(2):
         if enc == encoding or encoding >= 2: # specific encoding or all encodings
@@ -88,32 +88,28 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, f
             max_len.append(enc_length)
 
     if feat_extraction or encoding == 2:
-        print('Using Feature Engineering from BioAutoML...')
-        
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
         if path_model:
+            print('Extracting features from test data...')
+            df_predict, nameseqs = test_extraction(test_data)
+            df_predict.to_csv("features/best_test.csv", index=False)
+                
+        if not path_model and not features_exist:
+            print('Using Feature Engineering from BioAutoML...')
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
         
             subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'features/best_train.csv'])
             subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_test.csv', 'features/best_test.csv'])
-                
-        else:
-            if not features_exist:
-                subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
-                                ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
-            
-                subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_train.csv', 'features/best_train.csv'])
-                subprocess.run(['cp', 'bioautoml-results/best_descriptors/best_test.csv', 'features/best_test.csv'])
 
         train_data[0].features = pd.read_csv("features/best_train.csv").values.astype(np.float32)
         test_data[0].features = pd.read_csv("features/best_test.csv").values.astype(np.float32)
 
         max_len.append(train_data[0].features.shape[1])
 
-    return train_data, test_data, max_len
+    return train_data, test_data, max_len, nameseqs
 
 def conv_block(x, conv_params):
     
@@ -408,10 +404,9 @@ def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extracti
 
     df_predicted.to_csv(output, index=False)
 
-# python main.py --train data/train/ --test data/test/ --epochs 10 --patience 5 --encoding 1 --concat 1 --k 1 --feat_extraction 1 --num_convs 4 --activation 0 --batch_norm 1 --cnn_dropout 0.2 --num_lstm 0 --bidirectional 0 --lstm_dropout 0.2 --output results/enc0_cnn_1conv_k1_concat1
-
-# python main.py --train data/train/ --test data/predict/ --path_model path/model.h5 --encoding 1 --k 1 --feat_extraction 1 --features_exist 1 --output results/predict
-
+# Best configuration example
+# python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output results/predict
+    
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
     warnings.filterwarnings('ignore')
@@ -490,7 +485,7 @@ if __name__ == '__main__':
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
+    train_data, test_data, max_len, nameseqs = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
 
     num_labels = len(train_data[0].names)
 
@@ -503,15 +498,10 @@ if __name__ == '__main__':
         if path_model:
             model = tf.keras.models.load_model(path_model)
 
-            print(model)
-            # if feat_extraction:
-            #     scaler = joblib.load('features/scaler.pkl')
+            if feat_extraction:
+                scaler = joblib.load('features/scaler.pkl')
 
-            #     df_predict, nameseqs = test_extraction(test_data)
-
-            #     test_data[0].features = df_predict
-
-            #     predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler,  f'{output_folder}/model_predictions.csv')
+            predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler,  f'{output_folder}/model_predictions.csv')
         else:
             model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
 
