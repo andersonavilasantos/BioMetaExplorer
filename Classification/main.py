@@ -312,31 +312,15 @@ def test_extraction(test_data):
                     '-i', test_data[0].fastas[0], '-o', preprocessed_fasta],
                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-    datasets.append(path + '/NAC.csv')
-    datasets.append(path + '/DNC.csv')
-    datasets.append(path + '/TNC.csv')
     datasets.append(path + '/kGap_di.csv')
     datasets.append(path + '/kGap_tri.csv')
     datasets.append(path + '/ORF.csv')
     datasets.append(path + '/Fickett.csv')
-    datasets.append(path + '/Shannon.csv')
     datasets.append(path + '/FourierBinary.csv')
-    datasets.append(path + '/FourierComplex.csv')
     datasets.append(path + '/Tsallis.csv')
     datasets.append(path + '/repDNA.csv')
 
-    commands = [['python', 'MathFeature/methods/ExtractionTechniques.py',
-                        '-i', preprocessed_fasta, '-o', path + '/NAC.csv', '-l', 'predict',
-                        '-t', 'NAC', '-seq', '1'],
-
-                ['python', 'MathFeature/methods/ExtractionTechniques.py', '-i',
-                        preprocessed_fasta, '-o', path + '/DNC.csv', '-l', 'predict',
-                        '-t', 'DNC', '-seq', '1'],
-
-                ['python', 'MathFeature/methods/ExtractionTechniques.py', '-i',
-                        preprocessed_fasta, '-o', path + '/TNC.csv', '-l', 'predict',
-                        '-t', 'TNC', '-seq', '1'],
-                ['python', 'MathFeature/methods/Kgap.py', '-i',
+    commands = [['python', 'MathFeature/methods/Kgap.py', '-i',
                         preprocessed_fasta, '-o', path + '/kGap_di.csv', '-l',
                         'predict', '-k', '1', '-bef', '1',
                         '-aft', '2', '-seq', '1'],
@@ -355,9 +339,6 @@ def test_extraction(test_data):
                 ['python', 'MathFeature/methods/FourierClass.py', '-i',
                         preprocessed_fasta, '-o', path + '/FourierBinary.csv', '-l', 'predict',
                         '-r', '1'],
-                ['python', 'other-methods/FourierClass.py', '-i',
-                        preprocessed_fasta, '-o', path + '/FourierComplex.csv', '-l', 'predict',
-                        '-r', '6'],
                 ['python', 'other-methods/TsallisEntropy.py', '-i',
                         preprocessed_fasta, '-o', path + '/Tsallis.csv', '-l', 'predict',
                         '-k', '5', '-q', '2.3'],
@@ -385,7 +366,6 @@ def test_extraction(test_data):
     return df_predict, nameseqs
 
 def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaling, output):
-
     if encoding == 2:
         features = scaling.transform(test_data[0].features)
     else:
