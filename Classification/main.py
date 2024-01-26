@@ -19,7 +19,9 @@ import numpy as np
 import seqdata
 import argparse
 import warnings
+from Bio import SeqIO
 import os, shutil
+from tqdm import tqdm
 
 def conventional_models(algorithm, train_data, test_data):
     X_train, y_train = train_data[0].features, np.argmax(train_data[0].labels, axis=1)
@@ -76,7 +78,7 @@ def conventional_models(algorithm, train_data, test_data):
     
 def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist):
 
-    train_data, test_data, max_len, nameseqs = [], [], [], []
+    train_data, test_data, max_len = [], [], []
 
     for enc in range(2):
         if enc == encoding or encoding >= 2: # specific encoding or all encodings
@@ -91,12 +93,7 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, f
         train_fasta, train_labels = train_data[0].fastas, train_data[0].names
         test_fasta, test_labels = test_data[0].fastas, test_data[0].names
 
-        if path_model:
-            print('Extracting features from test data...')
-            df_predict, nameseqs = test_extraction(test_data)
-            df_predict.to_csv("features/best_test.csv", index=False)
-                
-        if not path_model and not features_exist:
+        if not features_exist:
             print('Using Feature Engineering from BioAutoML...')
             subprocess.run(['python', 'BioAutoML-feature.py', '--fasta_train'] + train_fasta + ['--fasta_label_train'] + train_labels +
                             ['--fasta_test'] + test_fasta + ['--fasta_label_test'] + test_labels + ['--output', 'bioautoml-results'])
@@ -109,7 +106,64 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, f
 
         max_len.append(train_data[0].features.shape[1])
 
-    return train_data, test_data, max_len, nameseqs
+    return train_data, test_data, max_len
+
+def load_data_predict(test_path, encoding, feat_extraction, k, scaler):
+    train_data = joblib.load('features/train_data.pkl')
+
+    predict_path, seq_path = os.path.join(test_path, "predict.fasta"), "features/seqs.fasta"
+
+    batch_size = 10000
+    current_batch = []
+
+    for i, record in tqdm(enumerate(SeqIO.parse(predict_path, format="fasta")), total=462042):
+        current_batch.append(record.format("fasta"))
+
+        if (i + 1) % batch_size == 0:
+            with open(seq_path, 'a') as f:
+                f.write("".join(current_batch))
+
+            test_data = []
+            
+            for enc in range(2):
+                if enc == encoding or encoding >= 2: # specific encoding or all encodings
+                    test = seqdata.Seq("features/", enc, k)
+
+                    test_data.append(test)
+
+            for train, test in zip(train_data, test_data):
+                seqdata.pad_data(train, test)
+
+            df_predict, nameseqs = test_extraction(test_data)
+
+            test_data[0].features = df_predict
+
+            predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
+
+            current_batch = []
+            with open(seq_path, 'w') as f:
+                f.write("")
+
+    if current_batch:
+        with open(seq_path, 'a') as f:
+            f.write("".join(current_batch))
+
+        test_data = []
+            
+        for enc in range(2):
+            if enc == encoding or encoding >= 2: # specific encoding or all encodings
+                test = seqdata.Seq("features/", enc, k)
+
+                test_data.append(test)
+
+        for train, test in zip(train_data, test_data):
+            seqdata.pad_data(train, test)
+
+        df_predict, nameseqs = test_extraction(test_data)
+
+        test_data[0].features = df_predict
+
+        predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
 
 def conv_block(x, conv_params):
     
@@ -307,11 +361,6 @@ def test_extraction(test_data):
     if not os.path.exists(path):
         os.mkdir(path)
 
-    preprocessed_fasta = path + '/prediction.fasta'
-    subprocess.run(['python', 'MathFeature/preprocessing/preprocessing.py',
-                    '-i', test_data[0].fastas[0], '-o', preprocessed_fasta],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
     datasets.append(path + '/kGap_di.csv')
     datasets.append(path + '/kGap_tri.csv')
     datasets.append(path + '/ORF.csv')
@@ -321,29 +370,26 @@ def test_extraction(test_data):
     datasets.append(path + '/repDNA.csv')
 
     commands = [['python', 'MathFeature/methods/Kgap.py', '-i',
-                        preprocessed_fasta, '-o', path + '/kGap_di.csv', '-l',
+                        test_data[0].fastas[0], '-o', path + '/kGap_di.csv', '-l',
                         'predict', '-k', '1', '-bef', '1',
                         '-aft', '2', '-seq', '1'],
                 ['python', 'MathFeature/methods/Kgap.py', '-i',
-                        preprocessed_fasta, '-o', path + '/kGap_tri.csv', '-l',
+                        test_data[0].fastas[0], '-o', path + '/kGap_tri.csv', '-l',
                         'predict', '-k', '1', '-bef', '1',
                         '-aft', '3', '-seq', '1'],
                 ['python', 'MathFeature/methods/CodingClass.py', '-i',
-                        preprocessed_fasta, '-o', path + '/ORF.csv', '-l', 'predict'],
+                        test_data[0].fastas[0], '-o', path + '/ORF.csv', '-l', 'predict'],
                 ['python', 'MathFeature/methods/FickettScore.py', '-i',
-                        preprocessed_fasta, '-o', path + '/Fickett.csv', '-l', 'predict',
+                        test_data[0].fastas[0], '-o', path + '/Fickett.csv', '-l', 'predict',
                         '-seq', '1'],
-                ['python', 'MathFeature/methods/EntropyClass.py', '-i',
-                        preprocessed_fasta, '-o', path + '/Shannon.csv', '-l', 'predict',
-                        '-k', '5', '-e', 'Shannon'],
                 ['python', 'MathFeature/methods/FourierClass.py', '-i',
-                        preprocessed_fasta, '-o', path + '/FourierBinary.csv', '-l', 'predict',
+                        test_data[0].fastas[0], '-o', path + '/FourierBinary.csv', '-l', 'predict',
                         '-r', '1'],
                 ['python', 'other-methods/TsallisEntropy.py', '-i',
-                        preprocessed_fasta, '-o', path + '/Tsallis.csv', '-l', 'predict',
+                        test_data[0].fastas[0], '-o', path + '/Tsallis.csv', '-l', 'predict',
                         '-k', '5', '-q', '2.3'],
                 ['python', 'other-methods/repDNA/repDNA-feat.py', '--file',
-                        preprocessed_fasta, '--output', path + '/repDNA.csv', '--label', 'predict']
+                        test_data[0].fastas[0], '--output', path + '/repDNA.csv', '--label', 'predict']
     ]
 
     processes = [Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) for cmd in commands]
@@ -365,7 +411,7 @@ def test_extraction(test_data):
 
     return df_predict, nameseqs
 
-def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaling, output):
+def predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaling, output):
     if encoding == 2:
         features = scaling.transform(test_data[0].features)
     else:
@@ -382,7 +428,10 @@ def predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extracti
 
     df_predicted['prediction'] = [train_data[0].names[index] for index in np.argmax(model_pred, axis=1)]
 
-    df_predicted.to_csv(output, index=False)
+    if os.path.exists(output):
+        df_predicted.to_csv(output, mode='a', header=False, index=False)
+    else:
+        df_predicted.to_csv(output, index=False)
 
 # Best configuration example
 # python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output results/predict
@@ -465,10 +514,6 @@ if __name__ == '__main__':
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    train_data, test_data, max_len, nameseqs = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
-
-    num_labels = len(train_data[0].names)
-
     os.makedirs(output_folder, exist_ok=True)
 
     if algorithm == 2:
@@ -481,8 +526,12 @@ if __name__ == '__main__':
             if feat_extraction:
                 scaler = joblib.load('features/scaler.pkl')
 
-            predict_seqs(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler,  f'{output_folder}/model_predictions.csv')
+            load_data_predict(test_path, encoding, feat_extraction, k, scaler)
         else:
+            train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
+
+            num_labels = len(train_data[0].names)
+
             model = create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params)
 
             train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaler, output_folder)
@@ -503,4 +552,6 @@ if __name__ == '__main__':
         )
         
     else:
+        train_data, test_data, max_len = load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist)
+
         conventional_models(algorithm, train_data, test_data)
