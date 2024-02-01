@@ -1,6 +1,14 @@
 import streamlit as st
+import polars as pl
 from streamlit_option_menu import option_menu
 import utils
+import time
+import pymongo
+
+def fetch_data():
+    df_pred = pl.read_csv("../Classification/data/predict/results/model_predictions.csv")
+
+    return df_pred
 
 if __name__ == "__main__":
     st.set_page_config(page_title = "BioMetaExplorer", page_icon = 'imgs/icon.png', initial_sidebar_state = "expanded", layout="wide")
@@ -39,3 +47,11 @@ if __name__ == "__main__":
             st.file_uploader("Or upload your FASTA file")
 
         st.divider()
+    elif page == "Browse":
+        start = time.time()
+
+        st.dataframe(fetch_data())
+
+        end = time.time()
+
+        print(end - start)
