@@ -3,7 +3,6 @@ import polars as pl
 from streamlit_option_menu import option_menu
 import utils
 import time
-import pymongo
 
 def fetch_data():
     df_pred = pl.read_csv("../Classification/data/predict/results/model_predictions.csv")
@@ -48,10 +47,10 @@ if __name__ == "__main__":
 
         st.divider()
     elif page == "Browse":
-        start = time.time()
+        # start = time.time()
 
         st.dataframe(fetch_data())
 
-        end = time.time()
+        # end = time.time()
 
-        print(end - start)
+        # print(end - start)
