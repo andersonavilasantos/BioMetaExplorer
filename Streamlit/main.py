@@ -7,31 +7,35 @@ if __name__ == "__main__":
     
     utils.inject_css()
 
-    for _ in range(10): 
-        st.sidebar.markdown("")
-    st.sidebar.divider()
-
-    option = option_menu(None, ["Home", "Browse", "About"], 
+    page = option_menu(None, ["Home", "Browse", "About"], 
     icons=["house", "search", "info-circle"], 
     menu_icon="cast", default_index=0, orientation="horizontal")
 
-    st.markdown('<p style="font-family:Axia Stencil; color:#73b2c1; font-size: 40px;">BioMetaExplorer</p>', unsafe_allow_html=True)
+    if page == "Home":
+        img_cols = st.columns([3, 2, 3])
 
-    st.markdown("""##### <span style="color:gray">FAIR and Beyond: Democratizing the Analysis of Non-Coding RNA with Multi-Omics and Data-Centric AI</span>
-                """, unsafe_allow_html=True)
+        with img_cols[1]:
+            st.image("imgs/logo.png")
 
-    st.info("BioMetaExplorer is ...")
+        st.markdown("""
+            <div style='text-align: center;'>
+                <h5 style="color:gray">FAIR and Beyond: Democratizing the Analysis of Non-Coding RNA with Multi-Omics and Data-Centric AI</h5>
+            </div>
+        """, unsafe_allow_html=True)
 
-    st.divider()
+        st.info("BioMetaExplorer is ...")
 
-    st.markdown("""##### Sequence classification</span>
-            """, unsafe_allow_html=True)
+        st.divider()
 
-    col1, col2 = st.columns(2)
+        st.markdown("""##### Sequence prediction</span>
+                """, unsafe_allow_html=True, help="Only sequences without ambiguous nucleotides are supported.")
 
-    with col1:
-        st.text_area("Input nucleotide sequences in FASTA format")
+        col1, col2 = st.columns(2)
 
-    with col2:
-        st.file_uploader("Or upload your FASTA file")
+        with col1:
+            st.text_area("Input nucleotide sequences in FASTA format", placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG")
 
+        with col2:
+            st.file_uploader("Or upload your FASTA file")
+
+        st.divider()
