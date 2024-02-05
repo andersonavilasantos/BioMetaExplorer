@@ -77,7 +77,6 @@ def conventional_models(algorithm, train_data, test_data):
     df_report.to_csv(f'{output_folder}/results.csv')
     
 def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, features_exist):
-
     train_data, test_data, max_len = [], [], []
 
     for enc in range(2):
@@ -116,7 +115,7 @@ def load_data_predict(test_path, encoding, feat_extraction, k, scaler):
     batch_size = 10000
     current_batch = []
 
-    for i, record in tqdm(enumerate(SeqIO.parse(predict_path, format="fasta")), total=462042):
+    for i, record in tqdm(enumerate(SeqIO.parse(predict_path, format="fasta")), total=1615529):
         current_batch.append(record.format("fasta"))
 
         if (i + 1) % batch_size == 0:
@@ -166,7 +165,6 @@ def load_data_predict(test_path, encoding, feat_extraction, k, scaler):
         predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
 
 def conv_block(x, conv_params):
-    
     for _ in range(conv_params['num_convs']):
         x = Conv1D(filters=128, kernel_size=3, padding='same')(x)
         if conv_params['batch_norm']:
@@ -182,7 +180,6 @@ def conv_block(x, conv_params):
     return x
 
 def lstm_block(x, lstm_params):
-
     for i in range(lstm_params['num_lstm']):
         
         seq = True if lstm_params['num_lstm'] > 1 and i < lstm_params['num_lstm'] - 1 else False
@@ -198,7 +195,6 @@ def lstm_block(x, lstm_params):
     return x
 
 def base_layers(encoding, concat, max_len, k, conv_params, lstm_params):
-
     num_combs = 4 ** k
 
     if encoding == 0: # One-hot encoding
@@ -214,7 +210,6 @@ def base_layers(encoding, concat, max_len, k, conv_params, lstm_params):
             x = Flatten()(x)
             x = Dense(128, activation='relu')(x)
             out = Dropout(0.5)(x)
-
     elif encoding == 1: # K-mer embedding
         input_layer = Input(shape=(max_len,))
 
@@ -230,7 +225,6 @@ def base_layers(encoding, concat, max_len, k, conv_params, lstm_params):
             x = Flatten()(x)
             x = Dense(128, activation='relu')(x)
             out = Dropout(0.5)(x)
-
     elif encoding == 2: # no encoding
         input_layer = Input(shape=(max_len,))
 
@@ -244,7 +238,6 @@ def base_layers(encoding, concat, max_len, k, conv_params, lstm_params):
     return input_layer, out
 
 def create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv_params, lstm_params):
-
     input_layers, outs = [], []
 
     for enc in range(2):
@@ -290,7 +283,6 @@ def create_model(encoding, concat, feat_extraction, num_labels, max_len, k, conv
     return model
 
 def train_model(model, encoding, train_data, feat_extraction, epochs, patience, scaling, output_folder):
-
     callbacks = [
         EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True, verbose=1)
     ]
@@ -328,7 +320,6 @@ def train_model(model, encoding, train_data, feat_extraction, epochs, patience, 
     model.save(f"{output_folder}/model.h5")
 
 def report_model(model, encoding, test_data, feat_extraction, scaling, output_file):
-
     if encoding == 2:
         features = scaling.transform(test_data[0].features)
     else:
@@ -434,7 +425,7 @@ def predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_ext
         df_predicted.to_csv(output, index=False)
 
 # Best configuration example
-# python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output results/predict
+# python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output data/predict/results/
     
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)

@@ -1,13 +1,16 @@
 import streamlit as st
 import polars as pl
 from streamlit_option_menu import option_menu
+import plotly.express as px
+from math import ceil
 import utils
 import time
 
+@st.cache_data
 def fetch_data():
-    df_pred = pl.read_csv("../Classification/data/predict/results/model_predictions.csv")
+    df_pred = pl.read_csv("../Classification/data/predict/predictions_complete.tsv", separator="\t")
 
-    return df_pred
+    return df_pred.to_pandas()
 
 if __name__ == "__main__":
     st.set_page_config(page_title = "BioMetaExplorer", page_icon = 'imgs/icon.png', initial_sidebar_state = "expanded", layout="wide")
@@ -40,17 +43,57 @@ if __name__ == "__main__":
         col1, col2 = st.columns(2)
 
         with col1:
-            st.text_area("Input nucleotide sequences in FASTA format", placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG")
+            st.text_area("Input nucleotide sequences in FASTA format", 
+                        placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG\n>Sequence_2\nAGCGGAGTAACTGCATG")
 
         with col2:
             st.file_uploader("Or upload your FASTA file")
 
         st.divider()
     elif page == "Browse":
-        # start = time.time()
+        data = fetch_data()
 
-        st.dataframe(fetch_data())
+        data_size = len(data)
 
-        # end = time.time()
+        table = st.container()
 
-        # print(end - start)
+        page_size = 100
+
+        menu = st.columns([6, 1])
+
+        total_pages = ceil(data_size/page_size)
+
+        with menu[1]:
+            page_number = st.number_input(
+                label="Page",
+                label_visibility="collapsed",
+                min_value=1,
+                max_value=total_pages,
+                step=1,
+            )
+
+        with menu[0]:
+            st.markdown(f"Page **{page_number}** of **{total_pages}** ")
+
+        current_start = (page_number - 1) * page_size
+
+        with table:
+            with st.spinner("Loading..."):
+                page = data.iloc[current_start:current_start + page_size, :]
+                
+                col1, col2 = st.columns([2, 1])
+
+                with col1:
+                    st.dataframe(page, use_container_width=True)
+
+                with col2:
+                    fig = px.sunburst(
+                        page,
+                        path=["GTDB-tk_domain", "GTDB-tk_phylum", "GTDB-tk_class", "GTDB-tk_order", "GTDB-tk_family", "GTDB-tk_genus", "GTDB-tk_species", "prediction"]
+                        # parents="GTDB-tk_domain",
+                        # names="GTDB-tk_phylum",
+                        
+                        # values='nameseq',
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True, help="t")
