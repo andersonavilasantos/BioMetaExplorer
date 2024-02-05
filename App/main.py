@@ -3,10 +3,14 @@ import polars as pl
 from streamlit_option_menu import option_menu
 import plotly.express as px
 from math import ceil
+from io import StringIO
+from Bio import SeqIO
 import utils
+import subprocess
 import time
+import os
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def fetch_data():
     df_pred = pl.read_csv("../Classification/data/predict/predictions_complete.tsv", separator="\t")
 
@@ -37,19 +41,37 @@ if __name__ == "__main__":
 
         st.divider()
 
-        st.markdown("""##### Sequence prediction</span>
-                """, unsafe_allow_html=True, help="Only sequences without ambiguous nucleotides are supported.")
+        st.markdown("""##### Sequence prediction""", unsafe_allow_html=True, help="Only sequences without ambiguous nucleotides are supported.")
 
-        col1, col2 = st.columns(2)
+        with st.form("sequences_submit"):
+            col1, col2 = st.columns(2)
 
-        with col1:
-            st.text_area("Input nucleotide sequences in FASTA format", 
-                        placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG\n>Sequence_2\nAGCGGAGTAACTGCATG")
+            with col1:
+                st.text_area("Input nucleotide sequences in FASTA format", height=125,
+                            placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG\n>Sequence_2\nAGCGGAGTAACTGCATG")
+            with col2:
+                fasta_file = st.file_uploader("Or upload your FASTA file")
 
-        with col2:
-            st.file_uploader("Or upload your FASTA file")
+            submitted = st.form_submit_button("Submit")
 
-        st.divider()
+        predict_path = os.path.abspath("predict")
+
+        if submitted:
+
+            stringio = StringIO(fasta_file.getvalue().decode("utf-8"))
+            with open("predict.fasta", "w") as f: 
+                for record in SeqIO.parse(stringio, "fasta"):
+                    f.write(record.format("fasta"))
+
+            with st.spinner("Predicting sequences..."):
+                subprocess.run(["python", "../Classification/main.py", "--test", predict_path] +
+                                ["--path_model", "../Classification/results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5"] +
+                                ["--encoding", "3", "--k", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", predict_path])
+                
+                df_results = pl.read_csv("predict/model_predictions.csv")
+                
+                st.dataframe(df_results, use_container_width=True)
+
     elif page == "Browse":
         data = fetch_data()
 
@@ -84,7 +106,7 @@ if __name__ == "__main__":
                 col1, col2 = st.columns([2, 1])
 
                 with col1:
-                    st.dataframe(page, use_container_width=True)
+                    st.dataframe(page, height=500, use_container_width=True)
 
                 with col2:
                     fig = px.sunburst(

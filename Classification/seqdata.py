@@ -11,7 +11,7 @@ class Seq:
 
         self.fasta_dir = fasta_dir
 
-        fasta_files = [fasta_dir + file for file in os.listdir(fasta_dir) if file.endswith("fasta")]
+        fasta_files = [os.path.join(fasta_dir, file) for file in os.listdir(fasta_dir) if file.endswith("fasta")]
         fasta_labels = [os.path.splitext(f.split('/')[-1])[0] for f in fasta_files]
 
         self.fastas = fasta_files

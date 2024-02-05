@@ -110,59 +110,24 @@ def load_data(train_path, test_path, encoding, feat_extraction, k, path_model, f
 def load_data_predict(test_path, encoding, feat_extraction, k, scaler):
     train_data = joblib.load('features/train_data.pkl')
 
-    predict_path, seq_path = os.path.join(test_path, "predict.fasta"), "features/seqs.fasta"
+    predict_path = os.path.join(test_path, "predict.fasta")
 
-    batch_size = 10000
-    current_batch = []
+    test_data = []
 
-    for i, record in tqdm(enumerate(SeqIO.parse(predict_path, format="fasta")), total=1615529):
-        current_batch.append(record.format("fasta"))
+    for enc in range(2):
+        if enc == encoding or encoding >= 2: # specific encoding or all encodings
+            test = seqdata.Seq(test_path, enc, k)
 
-        if (i + 1) % batch_size == 0:
-            with open(seq_path, 'a') as f:
-                f.write("".join(current_batch))
+            test_data.append(test)
 
-            test_data = []
-            
-            for enc in range(2):
-                if enc == encoding or encoding >= 2: # specific encoding or all encodings
-                    test = seqdata.Seq("features/", enc, k)
+    for train, test in zip(train_data, test_data):
+        seqdata.pad_data(train, test)
 
-                    test_data.append(test)
+    df_predict, nameseqs = test_extraction(test_data)
 
-            for train, test in zip(train_data, test_data):
-                seqdata.pad_data(train, test)
+    test_data[0].features = df_predict
 
-            df_predict, nameseqs = test_extraction(test_data)
-
-            test_data[0].features = df_predict
-
-            predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
-
-            current_batch = []
-            with open(seq_path, 'w') as f:
-                f.write("")
-
-    if current_batch:
-        with open(seq_path, 'a') as f:
-            f.write("".join(current_batch))
-
-        test_data = []
-            
-        for enc in range(2):
-            if enc == encoding or encoding >= 2: # specific encoding or all encodings
-                test = seqdata.Seq("features/", enc, k)
-
-                test_data.append(test)
-
-        for train, test in zip(train_data, test_data):
-            seqdata.pad_data(train, test)
-
-        df_predict, nameseqs = test_extraction(test_data)
-
-        test_data[0].features = df_predict
-
-        predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
+    predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_extraction, scaler, f'{output_folder}/model_predictions.csv')
 
 def conv_block(x, conv_params):
     for _ in range(conv_params['num_convs']):
@@ -419,10 +384,7 @@ def predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_ext
 
     df_predicted['prediction'] = [train_data[0].names[index] for index in np.argmax(model_pred, axis=1)]
 
-    if os.path.exists(output):
-        df_predicted.to_csv(output, mode='a', header=False, index=False)
-    else:
-        df_predicted.to_csv(output, index=False)
+    df_predicted.to_csv(output, index=False)
 
 # Best configuration example
 # python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output data/predict/results/
@@ -431,6 +393,8 @@ if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
     warnings.filterwarnings('ignore')
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+    os.chdir("../Classification")
 
     SEED = 0
     tf.keras.utils.set_random_seed(SEED)  # sets seeds for base-python, numpy and tf
