@@ -42,11 +42,6 @@ dependencies:
       - colorlog==6.7.0
       - contourpy==1.1.0
       - cycler==0.11.0
-      - dash==2.15.0
-      - dash-bootstrap-components==1.5.0
-      - dash-core-components==2.0.0
-      - dash-html-components==2.0.0
-      - dash-table==5.0.0
       - deap==1.4.1
       - dill==0.3.7
       - entrypoints==0.4
@@ -99,6 +94,7 @@ dependencies:
       - pillow==10.0.0
       - plotly==5.16.1
       - polars==0.18.15
+      - prometheus-client==0.20.0
       - protobuf==4.24.1
       - py4j==0.10.9.7
       - pyarrow==15.0.0
@@ -129,6 +125,17 @@ dependencies:
       - soupsieve==2.5
       - sqlalchemy==2.0.20
       - st-annotated-text==4.0.1
+      - streamlit==1.31.1
+      - streamlit-camera-input-live==0.2.0
+      - streamlit-card==1.0.0
+      - streamlit-embedcode==0.1.2
+      - streamlit-extras==0.4.0
+      - streamlit-faker==0.0.3
+      - streamlit-image-coordinates==0.1.6
+      - streamlit-keyup==0.2.3
+      - streamlit-option-menu==0.3.12
+      - streamlit-toggle-switch==1.0.2
+      - streamlit-vertical-slider==2.5.5
       - tenacity==8.2.3
       - tensorboard==2.13.0
       - tensorboard-data-server==0.7.1
@@ -151,4 +158,4 @@ dependencies:
       - wrapt==1.15.0
       - xgboost==1.7.6
       - zipp==3.17.0
-prefix: /home/brenoslivio/miniconda3/envs/biometaexplorer
+prefix: /mnt/UFZ-Data/miniconda3/envs/biometaexplorer
