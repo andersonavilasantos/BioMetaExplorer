@@ -4,6 +4,7 @@ primaryColor="#73b2c1"
 
 [server]
 runOnSave = true
+maxUploadSize = 128
 
 [browser]
 gatherUsageStats = false
