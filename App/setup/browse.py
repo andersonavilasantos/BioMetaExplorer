@@ -10,10 +10,11 @@ import matplotlib.pyplot as plt
 from pyfamsa import Aligner, Sequence
 import utils
 import dash_bio
-import RNA
-import dash
-import subprocess
 from dash import html
+import dash
+import RNA
+import subprocess
+import time
 
 @st.cache_data(show_spinner=False)
 def fetch_data():
@@ -161,8 +162,6 @@ def structure_visualization(df_sequences):
         # home_dir = os.path.expanduser('~')
         # dir_path = os.path.join(home_dir, '.biotukey')
 
-        dash_app = dash.Dash(__name__)
-
         sequences = [{
             'sequence': seq,
             'structure': ss
@@ -173,7 +172,7 @@ def structure_visualization(df_sequences):
             sequences=sequences,
         )
 
-        dash_app.layout = html.Div([
+        st.session_state["dash"].layout = html.Div([
             forna
         ])
 
@@ -183,10 +182,7 @@ def structure_visualization(df_sequences):
             st.markdown("**Structure visualization:**")
             st.components.v1.iframe("http://localhost:8050", height=500)
 
-        if "dash" not in st.session_state:
-            dash_app.run(debug=False)
-            st.session_state["dash"] = True
-        
+
         # RNA.svg_rna_plot(seq, ss, "rna_plot.svg")
 
         # with col2:
@@ -250,7 +246,14 @@ def runUI():
                 edited_df = st.data_editor(
                     page,
                     hide_index=True,
-                    height=500,    
+                    height=500,
+                    column_config = {"View": st.column_config.CheckboxColumn(required=True),
+                                    "Probability": st.column_config.ProgressColumn(
+                                        help="Prediction probability",
+                                        format="%.2f%%",
+                                        min_value=0,
+                                        max_value=100
+                                    ),},
                     column_order=["View"] + show_columns + ["Probability"],
                     disabled=show_columns,
                     use_container_width=True
