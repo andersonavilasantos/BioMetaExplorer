@@ -9,7 +9,11 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from pyfamsa import Aligner, Sequence
 import utils
+import dash_bio
 import RNA
+import dash
+import subprocess
+from dash import html
 
 @st.cache_data(show_spinner=False)
 def fetch_data():
@@ -156,14 +160,40 @@ def structure_visualization(df_sequences):
 
         # home_dir = os.path.expanduser('~')
         # dir_path = os.path.join(home_dir, '.biotukey')
-        
-        RNA.svg_rna_plot(seq, ss, "rna_plot.svg")
+
+        dash_app = dash.Dash(__name__)
+
+        sequences = [{
+            'sequence': seq,
+            'structure': ss
+        }]
+
+        forna = dash_bio.FornaContainer(
+            id='my-default-forna',
+            sequences=sequences,
+        )
+
+        dash_app.layout = html.Div([
+            forna
+        ])
 
         with col2:
             st.markdown("**Dot-bracket notation:**")
             st.markdown(ss)
-            st.markdown("**Secondary structure:**")
-            st.image("rna_plot.svg", use_column_width = 'always')
+            st.markdown("**Structure visualization:**")
+            st.components.v1.iframe("http://localhost:8050", height=500)
+
+        if "dash" not in st.session_state:
+            dash_app.run(debug=False)
+            st.session_state["dash"] = True
+        
+        # RNA.svg_rna_plot(seq, ss, "rna_plot.svg")
+
+        # with col2:
+        #     st.markdown("**Dot-bracket notation:**")
+        #     st.markdown(ss)
+        #     st.markdown("**Secondary structure:**")
+        #     st.image("rna_plot.svg", use_column_width = 'always')
 
 def runUI():
     data = fetch_data()
@@ -220,14 +250,7 @@ def runUI():
                 edited_df = st.data_editor(
                     page,
                     hide_index=True,
-                    height=500,
-                    column_config = {"View": st.column_config.CheckboxColumn(required=True),
-                                    "Probability": st.column_config.ProgressColumn(
-                                        help="Probability of predicted class",
-                                        format="%.2f%%",
-                                        min_value=0,
-                                        max_value=100
-                                    ),},
+                    height=500,    
                     column_order=["View"] + show_columns + ["Probability"],
                     disabled=show_columns,
                     use_container_width=True
