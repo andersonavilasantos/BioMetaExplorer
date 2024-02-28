@@ -63,7 +63,7 @@ def runUI():
                 
                 df_results = pl.read_csv("predict/model_predictions.csv")
                 
-                st.dataframe(df_results.select(["nameseq", "prediction"]), use_container_width=True)
+                st.dataframe(df_results.select(["nameseq", "prediction"]), hide_index=True, use_container_width=True)
             else:
                 st.error("No sequences submitted!")
 
