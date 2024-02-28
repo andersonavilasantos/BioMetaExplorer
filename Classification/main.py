@@ -456,6 +456,9 @@ if __name__ == '__main__':
 
     lstm_params = {'num_lstm': int(args.num_lstm), 'bidirectional': int(args.bidirectional), 'dropout': float(args.lstm_dropout)}
 
+    print(f"Working directory: {os.getcwd()}")
+    print(f"FASTA directory: {test_path}")
+
     # folder for model
     if not features_exist:
         path = 'features'

@@ -1,5 +1,6 @@
 import streamlit as st
 import polars as pl
+import pandas as pd
 from io import StringIO
 from Bio import SeqIO
 import subprocess
@@ -48,9 +49,22 @@ def runUI():
                                 ["--path_model", "../Classification/results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5"] +
                                 ["--encoding", "3", "--k", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", predict_path])
                 
-                df_results = pl.read_csv("predict/model_predictions.csv")
+                df_results = pd.read_csv("predict/model_predictions.csv")
+
+                df_results["Probability"] = df_results.apply(lambda x: max(x[["Cis-reg", "coding", "rRNA", "sRNA", "tRNA", "unknown"]])*100, axis=1)
+
+                df_results = df_results[["nameseq", "prediction", "Probability"]]
                 
-                st.dataframe(df_results.select(["nameseq", "prediction"]), hide_index=True, use_container_width=True)
+                df_results.columns = ["Name", "Prediction", "Probability"]
+
+                st.dataframe(df_results,
+                            column_config = {"Probability": st.column_config.ProgressColumn(
+                                help="Prediction probability",
+                                format="%.2f%%",
+                                min_value=0,
+                                max_value=100
+                            )},
+                            hide_index=True, use_container_width=True)
             elif fasta_file:
                 stringio = StringIO(fasta_file.getvalue().decode("utf-8"))
                 with open(os.path.join(predict_path, "predict.fasta"), "w") as f: 

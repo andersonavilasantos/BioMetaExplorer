@@ -45,14 +45,6 @@ def relative_information(col, freq, ic):
     return height
 
 def seq_alignment(df_sequences):
-    # df_sequences = pd.DataFrame()
-
-    # for seq_class in seqs:
-    #     df_seq = seqs[seq_class].df.copy()
-    #     df_seq['list_name'] = seq_class + ' - ' + df_seq['name']
-    #     df_sequences = pd.concat([df_sequences, df_seq]).reset_index(drop=True)
-
-    # seq_select = st.multiselect("Select sequences to view alignment:", df_sequences["nameseq"])
 
     chars = ['A', 'C', 'G', 'T']
 
