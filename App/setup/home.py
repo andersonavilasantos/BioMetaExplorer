@@ -4,7 +4,10 @@ import pandas as pd
 from io import StringIO
 from Bio import SeqIO
 import subprocess
+import streamlit.components.v1 as components
 import os
+from secrets import choice
+import string
 
 def runUI():
     img_cols = st.columns([3, 2, 3])
@@ -23,63 +26,49 @@ def runUI():
     st.divider()
 
     st.markdown("""##### Sequence prediction""", unsafe_allow_html=True, help="Only sequences without ambiguous nucleotides are supported.")
-    with st.spinner("Predicting sequences..."):
-        with st.form("sequences_submit"):
-            col1, col2 = st.columns(2)
 
-            with col1:
-                fasta_text = st.text_area("Input nucleotide sequences in FASTA format", height=125,
-                            placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG\n>Sequence_2\nAGCGGAGTAACTGCATG")
-            with col2:
-                fasta_file = st.file_uploader("Or upload your FASTA file")
+    with st.form("sequences_submit"):
+        col1, col2 = st.columns(2)
 
-            submitted = st.form_submit_button("Submit")
+        with col1:
+            fasta_text = st.text_area("Input nucleotide sequences in FASTA format", height=125,
+                        placeholder=">Sequence_1\nAGCGCAACTCGGACTGCATG\n>Sequence_2\nAGCGGAGTAACTGCATG")
+        with col2:
+            fasta_file = st.file_uploader("Or upload your FASTA file")
 
-        predict_path = os.path.abspath("predict")
+        submitted = st.form_submit_button("Submit")
 
-        if submitted:
+    predict_path = os.path.abspath("jobs")
 
-            if fasta_text:
-                stringio = StringIO(fasta_text)
-                with open(os.path.join(predict_path, "predict.fasta"), "w") as f: 
-                    for record in SeqIO.parse(stringio, "fasta"):
-                        f.write(record.format("fasta"))
+    if submitted:
+        if fasta_text:
+            job_id = ''.join([choice(string.ascii_uppercase + string.digits) for _ in range(10)])
+            job_path = os.path.join(predict_path, job_id)
+            st.success(f"Job submitted successfully! You can consult the results in Jobs using the following ID: **{job_id}**")
+            os.makedirs(job_path)
+            
+            stringio = StringIO(fasta_text)
+            with open(os.path.join(job_path, "predict.fasta"), "w") as f: 
+                for record in SeqIO.parse(stringio, "fasta"):
+                    f.write(record.format("fasta"))
 
-                subprocess.run(["python", "../Classification/main.py", "--test", predict_path] +
-                                ["--path_model", "../Classification/results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5"] +
-                                ["--encoding", "3", "--k", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", predict_path])
-                
-                df_results = pd.read_csv("predict/model_predictions.csv")
+            subprocess.run(["python", "../Classification/main.py", "--test", job_path] +
+                            ["--path_model", "../Classification/results/enc1_cnn_bilstm_4conv_k1_concat2_bio/model.h5"] +
+                            ["--encoding", "1", "--k", "1", "--concat", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", job_path])
+            
+        elif fasta_file:
+            job_id = ''.join([choice(string.ascii_uppercase + string.digits) for _ in range(10)])
+            job_path = os.path.join(predict_path, job_id)
+            st.success(f"Job submitted successfully! You can consult the results in Jobs using the following ID: **{job_id}**")
+            os.makedirs(job_path)
 
-                df_results["Probability"] = df_results.apply(lambda x: max(x[["Cis-reg", "coding", "rRNA", "sRNA", "tRNA", "unknown"]])*100, axis=1)
+            stringio = StringIO(fasta_file.getvalue().decode("utf-8"))
+            with open(os.path.join(job_path, "predict.fasta"), "w") as f: 
+                for record in SeqIO.parse(stringio, "fasta"):
+                    f.write(record.format("fasta"))
 
-                df_results = df_results[["nameseq", "prediction", "Probability"]]
-                
-                df_results.columns = ["Name", "Prediction", "Probability"]
-
-                st.dataframe(df_results,
-                            column_config = {"Probability": st.column_config.ProgressColumn(
-                                help="Prediction probability",
-                                format="%.2f%%",
-                                min_value=0,
-                                max_value=100
-                            )},
-                            hide_index=True, use_container_width=True)
-            elif fasta_file:
-                stringio = StringIO(fasta_file.getvalue().decode("utf-8"))
-                with open(os.path.join(predict_path, "predict.fasta"), "w") as f: 
-                    for record in SeqIO.parse(stringio, "fasta"):
-                        f.write(record.format("fasta"))
-
-                subprocess.run(["python", "../Classification/main.py", "--test", predict_path] +
-                                ["--path_model", "../Classification/results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5"] +
-                                ["--encoding", "3", "--k", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", predict_path])
-                
-                df_results = pl.read_csv("predict/model_predictions.csv")
-                
-                st.dataframe(df_results.select(["nameseq", "prediction"]), hide_index=True, use_container_width=True)
-            else:
-                st.error("No sequences submitted!")
-
-
-
+            subprocess.run(["python", "../Classification/main.py", "--test", job_path] +
+                            ["--path_model", "../Classification/results/enc1_cnn_bilstm_4conv_k1_concat2_bio/model.h5"] +
+                            ["--encoding", "1", "--k", "1", "--concat", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", job_path])
+        else:
+            st.error("No sequences submitted!")

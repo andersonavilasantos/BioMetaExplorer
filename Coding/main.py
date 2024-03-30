@@ -13,7 +13,7 @@ def extract_orfs(genome_files, meta, output):
     with ProcessPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(find_orfs, genome, meta, output) for genome in genome_files]
         for future in tqdm(futures, desc="Extracting ORFs from genomes"):
-            future.result()  # Block until the future is done
+            future.result() 
         remove_duplicates(output)
 
 def find_orfs(genome, meta, output):
@@ -128,7 +128,7 @@ def identify_spurious_proteins(protein_ids, input_file, output_file, original_or
                 
 if __name__ == "__main__":
     genome_folder = "data"
-    meta = True  # or False if MAG
+    meta = True
     genome_files = [os.path.join(genome_folder, file) for file in os.listdir(genome_folder) if file.endswith(".fasta")]
     
     with tempfile.TemporaryDirectory() as tmp_dir:

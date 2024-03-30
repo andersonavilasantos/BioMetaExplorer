@@ -387,8 +387,8 @@ def predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_ext
     df_predicted.to_csv(output, index=False)
 
 # Best configuration example
-# python main.py --train data/train/ --test data/predict/ --path_model results/enc2_cnn_bilstm_4conv_k1_concat1_bio/model.h5 --encoding 3 --k 1 --feat_extraction 1 --features_exist 1 --output data/predict/results/
-    
+# python main.py --train data/train/ --test data/predict/ --path_model results/enc1_cnn_bilstm_4conv_k1_concat2_bio/model.h5 --encoding 1 --k 1 --concat, 2 --feat_extraction 1 --features_exist 1 --output data/predict/results_right/
+
 if __name__ == '__main__':
     warnings.filterwarnings(action='ignore', category=FutureWarning)
     warnings.filterwarnings('ignore')
