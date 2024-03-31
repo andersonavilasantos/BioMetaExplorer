@@ -3,6 +3,9 @@ import pandas as pd
 import os
 
 def runUI():
+    if not st.session_state["queue"]:
+        st.session_state["queue"] = True
+
     predict_path = "jobs"
     with st.form("sequences_submit"):
         job_id = st.text_input("Enter Job ID")

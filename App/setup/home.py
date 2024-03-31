@@ -32,11 +32,11 @@ def runUI():
 
     job_queue = Queue()
 
-    if "listener" not in st.session_state:
+    if not st.session_state["queue"]:
         queue_thread = Thread(target=queue_listener)
         add_script_run_ctx(queue_thread)
         queue_thread.start()
-        st.session_state["listener"] = True
+        st.session_state["queue"] = True
 
     img_cols = st.columns([3, 2, 3])
 
@@ -70,7 +70,7 @@ def runUI():
 
     if submitted:
         if fasta_text:
-            job_id = ''.join([choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10)])
+            job_id = ''.join([choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16)])
             job_path = os.path.join(predict_path, job_id)
             fasta_sequences = StringIO(fasta_text)
 
@@ -79,7 +79,7 @@ def runUI():
             st.success(f"Job submitted to the queue. You can consult the results in \"Jobs\" using the following ID: **{job_id}**")
 
         elif fasta_file:
-            job_id = ''.join([choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10)])
+            job_id = ''.join([choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16)])
             job_path = os.path.join(predict_path, job_id)
             fasta_sequences = StringIO(fasta_file.getvalue().decode("utf-8"))
 

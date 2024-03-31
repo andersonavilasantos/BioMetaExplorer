@@ -142,17 +142,17 @@ def structure_visualization(df_sequences):
     col1, col2 = st.columns(2)
 
     with col1:
-        seq_select = st.selectbox("Select sequence to predict structure:", 
-                                options=df_sequences["nameseq"], index=None,
-                                placeholder="Choose a sequence")
+        with st.form("structure_submit"):
+            seq_select = st.selectbox("Select sequence to predict structure:", 
+                        options=df_sequences["nameseq"], index=None,
+                        placeholder="Choose a sequence")
 
-    if seq_select:
+            submitted = st.form_submit_button("Submit")
+
+    if submitted:
         seq = df_sequences[df_sequences["nameseq"] == seq_select].reset_index(drop=True)["Sequence"][0]
 
         ss, _ = RNA.fold(seq)
-
-        # home_dir = os.path.expanduser('~')
-        # dir_path = os.path.join(home_dir, '.biotukey')
 
         sequences = [{
             'sequence': seq,
@@ -164,7 +164,7 @@ def structure_visualization(df_sequences):
             sequences=sequences,
         )
 
-        st.session_state["dash"].layout = html.Div([
+        st.session_state["dash"]["app"].layout = html.Div([
             forna
         ])
 
@@ -172,8 +172,7 @@ def structure_visualization(df_sequences):
             st.markdown("**Dot-bracket notation:**")
             st.markdown(ss)
             st.markdown("**Structure visualization:**")
-            st.components.v1.iframe("http://localhost:8050", height=500)
-
+            st.components.v1.iframe(f"http://localhost:{st.session_state['dash']['port']}?timestamp={int(time.time())}", height=500)
 
         # RNA.svg_rna_plot(seq, ss, "rna_plot.svg")
 
@@ -184,6 +183,9 @@ def structure_visualization(df_sequences):
         #     st.image("rna_plot.svg", use_column_width = 'always')
 
 def runUI():
+    if not st.session_state["queue"]:
+        st.session_state["queue"] = True
+
     data = fetch_data()
 
     data_size = len(data)
