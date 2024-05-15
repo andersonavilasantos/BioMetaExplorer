@@ -9,12 +9,11 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from pyfamsa import Aligner, Sequence
 import utils
-import dash_bio
-from dash import html
-import dash
+import os
 import RNA
 import subprocess
 import time
+import tempfile
 
 @st.cache_data(show_spinner=False)
 def fetch_data():
@@ -152,35 +151,17 @@ def structure_visualization(df_sequences):
     if submitted:
         seq = df_sequences[df_sequences["nameseq"] == seq_select].reset_index(drop=True)["Sequence"][0]
 
-        ss, _ = RNA.fold(seq)
+        with tempfile.TemporaryDirectory() as temp_dir:
 
-        sequences = [{
-            'sequence': seq,
-            'structure': ss
-        }]
+            ss, _ = RNA.fold(seq)
+            tmp_plot = os.path.join(temp_dir, f"{int(time.time())}.svg")
+            RNA.svg_rna_plot(seq, ss, tmp_plot)
 
-        forna = dash_bio.FornaContainer(
-            id='my-default-forna',
-            sequences=sequences,
-        )
-
-        st.session_state["dash"]["app"].layout = html.Div([
-            forna
-        ])
-
-        with col2:
-            st.markdown("**Dot-bracket notation:**")
-            st.markdown(ss)
-            st.markdown("**Structure visualization:**")
-            st.components.v1.iframe(f"http://localhost:{st.session_state['dash']['port']}?timestamp={int(time.time())}", height=500)
-
-        # RNA.svg_rna_plot(seq, ss, "rna_plot.svg")
-
-        # with col2:
-        #     st.markdown("**Dot-bracket notation:**")
-        #     st.markdown(ss)
-        #     st.markdown("**Secondary structure:**")
-        #     st.image("rna_plot.svg", use_column_width = 'always')
+            with col2:
+                st.markdown("**Dot-bracket notation:**")
+                st.markdown(ss)
+                st.markdown("**Structure visualization:**")
+                st.image(tmp_plot, use_column_width = "always")
 
 def runUI():
     if not st.session_state["queue"]:

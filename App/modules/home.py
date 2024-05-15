@@ -49,11 +49,23 @@ def runUI():
         </div>
     """, unsafe_allow_html=True)
 
-    st.info("BioMetaExplorer is ...")
+    st.info("**BioMetaExplorer** is a web-based platform designed to the field of bioinformatics by facilitating the exploration and analysis " +
+            "of biological metadata. Engineered to provide researchers and scientists with a robust tool, it enables in-depth studies on " + 
+            "**non-coding RNA sequences** and their impact on various biological processes. Harnessing the power of high-throughput technologies " +
+            "and advanced computational methods, BioMetaExplorer delivers a seamless, user-friendly experience that enhances the accuracy and " +
+            "efficiency of genomic research.\n\n" +
+            "This platform not only allows for the intuitive submission and analysis of nucleic acid sequences but also supports the integration " +
+            "of large-scale datasets from global research consortia. It features advanced visualization tools for sequence alignment and secondary " +
+            "structure, enhancing the understanding of molecular interactions and functions. Researchers can easily filter and download desired " +
+            "sequences, facilitating a tailored approach to data analysis. Committed to adhering to **FAIR principles**—findability, accessibility, " +
+            "interoperability, and reusability—BioMetaExplorer ensures that data remains accessible and useful to the scientific community at large, " +
+            "promoting a more connected and inclusive research environment.")
 
     st.divider()
 
     st.markdown("""##### Sequence prediction""", unsafe_allow_html=True, help="Only sequences without ambiguous nucleotides are supported.")
+
+    queue_info = st.container()
 
     with st.form("sequences_submit"):
         col1, col2 = st.columns(2)
@@ -76,8 +88,9 @@ def runUI():
 
             os.makedirs(job_path)
             job_queue.put((fasta_sequences, job_path))
-            st.success(f"Job submitted to the queue. You can consult the results in \"Jobs\" using the following ID: **{job_id}**")
 
+            with queue_info:
+                st.success(f"Job submitted to the queue. You can consult the results in \"Jobs\" using the following ID: **{job_id}**")
         elif fasta_file:
             job_id = ''.join([choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16)])
             job_path = os.path.join(predict_path, job_id)
@@ -85,6 +98,9 @@ def runUI():
 
             os.makedirs(job_path)
             job_queue.put((fasta_sequences, job_path))
-            st.success(f"Job submitted to the queue. You can consult the results in \"Jobs\" using the following ID: **{job_id}**")
+
+            with queue_info:
+                st.success(f"Job submitted to the queue. You can consult the results in \"Jobs\" using the following ID: **{job_id}**")
         else:
-            st.error("No sequences submitted!")
+            with queue_info:
+                st.error("No sequences submitted!")
