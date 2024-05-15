@@ -210,13 +210,13 @@ def runUI():
                     hide_index=True,
                     height=500,
                     column_config = {"View": st.column_config.CheckboxColumn(required=True),
-                                    "Probability": st.column_config.ProgressColumn(
+                                    "probability": st.column_config.ProgressColumn(
                                         help="Prediction probability",
                                         format="%.2f%%",
                                         min_value=0,
                                         max_value=100
                                     ),},
-                    column_order=["View"] + show_columns + ["Probability"],
+                    column_order=["View"] + show_columns + ["probability"],
                     disabled=show_columns,
                     use_container_width=True
                 )

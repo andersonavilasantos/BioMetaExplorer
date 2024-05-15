@@ -79,7 +79,7 @@ def runUI():
         with col2:
             fasta_file = st.file_uploader("Or upload your FASTA file")
 
-        submitted = st.form_submit_button("Submit")
+        submitted = st.form_submit_button("Submit", use_container_width=True, type="primary")
 
     predict_path = os.path.abspath("jobs")
 

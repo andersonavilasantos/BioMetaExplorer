@@ -44,14 +44,9 @@ def relative_information(col, freq, ic):
     return height
 
 def seq_alignment(df_sequences):
-
     chars = ['A', 'C', 'G', 'T']
 
-    # if seq_select:
     with st.spinner('Loading...'):
-        # nseqs_selected = len(seq_select)
-
-        # df_select = df_sequences[df_sequences["nameseq"].isin(seq_select)]
 
         sequences = [Sequence(name.encode(), 
                     df_sequences.loc[df_sequences["nameseq"] == name]["Sequence"].item().encode()) 
@@ -209,7 +204,7 @@ def runUI():
         with st.spinner("Loading..."):
             page = data.iloc[current_start:current_start + page_size, :].copy()
 
-            page["Probability"] = page.apply(lambda x: max(x[["Cis-reg", "coding", "rRNA", "sRNA", "tRNA", "unknown"]])*100, axis=1)
+            page["probability"] = page.apply(lambda x: max(x[["Cis-reg", "coding", "rRNA", "sRNA", "tRNA", "unknown"]])*100, axis=1)
 
             show_columns = ["mag", "GTDB-tk_domain", "GTDB-tk_phylum", "prediction"]
 
@@ -223,13 +218,13 @@ def runUI():
                     hide_index=True,
                     height=500,
                     column_config = {"View": st.column_config.CheckboxColumn(required=True),
-                                    "Probability": st.column_config.ProgressColumn(
+                                    "probability": st.column_config.ProgressColumn(
                                         help="Prediction probability",
                                         format="%.2f%%",
                                         min_value=0,
                                         max_value=100
                                     ),},
-                    column_order=["View"] + show_columns + ["Probability"],
+                    column_order=["View"] + show_columns + ["probability"],
                     disabled=show_columns,
                     use_container_width=True
                 )
@@ -251,7 +246,7 @@ def runUI():
     if not selected_rows.empty:
         st.divider()
 
-        st.dataframe(selected_rows, hide_index=True)
+        st.dataframe(selected_rows.drop(columns=["probability"]), hide_index=True)
 
         tab1, tab2 = st.tabs(["Sequence Alignment", "Secondary Structure"])
 
