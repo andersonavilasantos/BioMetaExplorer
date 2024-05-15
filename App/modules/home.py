@@ -11,6 +11,7 @@ import string
 from queue import Queue
 from threading import Thread
 from streamlit.runtime.scriptrunner import add_script_run_ctx
+import utils
 
 def submit_job(fasta_sequences, job_path):
     with open(os.path.join(job_path, "predict.fasta"), "w") as f: 
@@ -20,6 +21,8 @@ def submit_job(fasta_sequences, job_path):
     subprocess.run(["python", "../Classification/main.py", "--test", job_path] +
                     ["--path_model", "../Classification/results/enc1_cnn_bilstm_4conv_k1_concat2_bio/model.h5"] +
                     ["--encoding", "1", "--k", "1", "--concat", "1", "--feat_extraction", "1", "--features_exist", "1", "--output", job_path])
+
+    utils.summary_stats(job_path)
 
 def queue_listener():
     while True:

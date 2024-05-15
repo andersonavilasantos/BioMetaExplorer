@@ -380,7 +380,16 @@ def predict_sequences(model, encoding, nameseqs, train_data, test_data, feat_ext
 
     df_predicted = pd.DataFrame(model_pred, columns=train_data[0].names)
 
-    df_predicted = pd.concat([nameseqs, df_predicted], axis=1)
+    sequences = []
+
+    for record in SeqIO.parse(test_data[0].fastas[0], "fasta"):
+        sequences.append(str(record.seq))
+
+    seqs = pd.DataFrame({
+        'sequence': sequences
+    })
+
+    df_predicted = pd.concat([nameseqs, seqs, df_predicted], axis=1)
 
     df_predicted['prediction'] = [train_data[0].names[index] for index in np.argmax(model_pred, axis=1)]
 

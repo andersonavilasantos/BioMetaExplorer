@@ -1,0 +1,2 @@
+num_seqs,min_length,max_length,avg_length,std_length,sum_length,Q1,Q2,Q3,N50,gc_content
+433,36,766,96.87066974595842,78.05899879040943,41945,73.0,74.0,85.0,82,61.26733617713751
